@@ -575,10 +575,13 @@
             <!-- Mode Toggle -->
             <div class="mode-toggle">
                 <button class="mode-btn active" id="modeQuick" onclick="setMode('quick')">
-                    🚀 Quick Search
+                    🚀 Quick
+                </button>
+                <button class="mode-btn" id="modeHeavy" onclick="setMode('heavy')">
+                    💪 Heavy
                 </button>
                 <button class="mode-btn" id="modeDeep" onclick="setMode('deep')">
-                    🔬 Deep Research
+                    🔬 Deep
                 </button>
             </div>
 
@@ -629,18 +632,28 @@
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('modeQuick').classList.toggle('active', mode === 'quick');
+            document.getElementById('modeHeavy').classList.toggle('active', mode === 'heavy');
             document.getElementById('modeDeep').classList.toggle('active', mode === 'deep');
-            document.getElementById('filtersContainer').style.display = mode === 'quick' ? 'flex' : 'none';
-            document.getElementById('searchIcon').textContent = mode === 'quick' ? '🚀' : '🔬';
-            document.getElementById('searchLabel').textContent = mode === 'quick' ? 'Search' : 'Research';
-            document.getElementById('searchInput').placeholder = mode === 'quick'
-                ? 'What would you like to know?'
-                : 'Enter a complex topic to research...';
+            document.getElementById('filtersContainer').style.display = mode === 'quick' || mode === 'heavy' ? 'flex' : 'none';
+
+            const icons = { quick: '🚀', heavy: '💪', deep: '🔬' };
+            const labels = { quick: 'Search', heavy: 'Search', deep: 'Research' };
+            const placeholders = {
+                quick: 'What would you like to know?',
+                heavy: 'Search with deep content analysis...',
+                deep: 'Enter a complex topic to research...'
+            };
+
+            document.getElementById('searchIcon').textContent = icons[mode];
+            document.getElementById('searchLabel').textContent = labels[mode];
+            document.getElementById('searchInput').placeholder = placeholders[mode];
         }
 
         function executeSearch() {
             if (currentMode === 'quick') {
                 search();
+            } else if (currentMode === 'heavy') {
+                heavySearch();
             } else {
                 deepResearch();
             }
@@ -784,6 +797,105 @@
                 return u.hostname + (u.pathname.length > 30 ? u.pathname.substring(0, 30) + '...' : u.pathname);
             } catch {
                 return url.substring(0, 50);
+            }
+        }
+
+        // === HEAVY SEARCH ===
+        async function heavySearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const resultsContainer = document.getElementById('results');
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = true;
+
+            resultsContainer.innerHTML = `
+                <div class="research-progress" id="progressContainer">
+                    <div class="progress-phase active">💪 Searching multiple sources...</div>
+                </div>
+            `;
+
+            let answerContent = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/search/heavy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        max_results: 10,
+                        freshness: currentFreshness,
+                        include_answer: true
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleHeavyEvent(data);
+
+                                if (data.type === 'answer_chunk') {
+                                    answerContent += data.content;
+                                }
+                            } catch (e) { }
+                        }
+                    }
+                }
+
+                // Show final answer
+                if (answerContent) {
+                    const progressEl = document.getElementById('progressContainer');
+                    if (progressEl) {
+                        progressEl.innerHTML = `<div class="progress-phase complete">✅ Search complete</div>`;
+                    }
+                    resultsContainer.innerHTML += `
+                        <div class="answer-card">
+                            <div class="answer-header">💪 Heavy Answer</div>
+                            <div class="answer-text">${formatAnswer(simpleMarkdown(answerContent))}</div>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                resultsContainer.innerHTML = `
+                    <div class="answer-card" style="border-color: #ef4444;">
+                        <div class="answer-header" style="color: #ef4444;">❌ Error</div>
+                        <p class="answer-text">Heavy search failed: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+
+        function handleHeavyEvent(data) {
+            const progressEl = document.getElementById('progressContainer');
+            if (!progressEl) return;
+
+            switch (data.type) {
+                case 'status':
+                    progressEl.innerHTML = `<div class="progress-phase active">⏳ ${data.message}</div>`;
+                    break;
+                case 'search_complete':
+                    progressEl.innerHTML += `<div class="progress-phase complete">✅ Found ${data.results_count} results from ${data.sources.join(', ')}</div>`;
+                    break;
+                case 'scrape_complete':
+                    progressEl.innerHTML += `<div class="progress-phase complete">📄 Scraped ${data.scraped_count}/${data.total} pages</div>`;
+                    break;
+                case 'answer_start':
+                    progressEl.innerHTML += `<div class="progress-phase active">✍️ Generating answer...</div>`;
+                    break;
             }
         }
 
