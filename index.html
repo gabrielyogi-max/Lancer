@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lancer Search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            z-index: -1;
+            animation: pulse 10s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Search Box */
+        .search-container {
+            margin: 2rem 0;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 4px 32px var(--accent-glow);
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 1rem 1.25rem;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* Results */
+        .results-container {
+            margin-top: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Answer Card */
+        .answer-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05));
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .answer-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .answer-text {
+            line-height: 1.7;
+            color: var(--text-primary);
+        }
+
+        .answer-text a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Temporal Badge */
+        .temporal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .temporal-badge .intent {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        /* Result Cards */
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-card:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .result-title:hover {
+            color: var(--accent);
+        }
+
+        .result-url {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .result-content {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .result-scores {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .score-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .score-bar {
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .score-fill.relevance { background: var(--accent); }
+        .score-fill.freshness { background: var(--success); }
+        .score-fill.authority { background: var(--warning); }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+            .container { padding: 1rem; }
+            h1 { font-size: 1.75rem; }
+            .search-box { flex-direction: column; }
+            .search-btn { justify-content: center; }
+            .filters { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">🔍</span>
+                <h1>Lancer Search</h1>
+            </div>
+            <p class="tagline">AI-powered search with temporal intelligence</p>
+        </header>
+
+        <div class="search-container">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput"
+                    placeholder="What would you like to know?"
+                    autofocus
+                >
+                <button class="search-btn" id="searchBtn" onclick="search()">
+                    <span>🚀</span>
+                    Search
+                </button>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" data-freshness="any">Anytime</button>
+                <button class="filter-btn" data-freshness="day">Today</button>
+                <button class="filter-btn" data-freshness="week">This Week</button>
+                <button class="filter-btn" data-freshness="month">This Month</button>
+            </div>
+        </div>
+
+        <div class="results-container" id="results"></div>
+
+        <footer>
+            Powered by <a href="https://huggingface.co/spaces/Madras1/Lancer" target="_blank">Lancer API</a> 
+            | Built with 💜 by Gabriel Yogi
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = 'https://madras1-lancer.hf.space/api/v1/search';
+        let currentFreshness = 'any';
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFreshness = btn.dataset.freshness;
+            });
+        });
+
+        // Enter key to search
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') search();
+        });
+
+        async function search() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const resultsContainer = document.getElementById('results');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            // Show loading
+            searchBtn.disabled = true;
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Searching with temporal intelligence...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        max_results: 10,
+                        freshness: currentFreshness,
+                        include_answer: true
+                    })
+                });
+
+                if (!response.ok) throw new Error('Search failed');
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                resultsContainer.innerHTML = `
+                    <div class="answer-card" style="border-color: #ef4444;">
+                        <div class="answer-header" style="color: #ef4444;">
+                            ❌ Error
+                        </div>
+                        <p class="answer-text">
+                            Could not complete the search. Make sure the API has the required secrets configured (GROQ_API_KEY, TAVILY_API_KEY).
+                        </p>
+                    </div>
+                `;
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContainer = document.getElementById('results');
+            let html = '';
+
+            // Answer card
+            if (data.answer) {
+                html += `
+                    <div class="answer-card">
+                        <div class="answer-header">
+                            ✨ AI Answer
+                        </div>
+                        <div class="answer-text">${formatAnswer(data.answer)}</div>
+                        ${data.temporal_context ? `
+                            <div class="temporal-badge">
+                                ⏰ Intent: <span class="intent">${data.temporal_context.query_temporal_intent}</span>
+                                | Urgency: ${Math.round(data.temporal_context.temporal_urgency * 100)}%
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // Stats
+            if (data.results.length > 0) {
+                html += `
+                    <div class="stats">
+                        <div class="stat">
+                            📊 <span class="stat-value">${data.results.length}</span> results
+                        </div>
+                        <div class="stat">
+                            ⚡ <span class="stat-value">${Math.round(data.processing_time_ms)}</span> ms
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Results
+            data.results.forEach((result, index) => {
+                html += `
+                    <div class="result-card" style="animation-delay: ${index * 0.1}s">
+                        <div class="result-header">
+                            <a href="${result.url}" target="_blank" class="result-title">
+                                ${result.title || 'Untitled'}
+                            </a>
+                        </div>
+                        <div class="result-url">${truncateUrl(result.url)}</div>
+                        <div class="result-content">${truncate(result.content, 200)}</div>
+                        <div class="result-scores">
+                            <div class="score-badge">
+                                🎯 Relevance
+                                <div class="score-bar">
+                                    <div class="score-fill relevance" style="width: ${result.score * 100}%"></div>
+                                </div>
+                            </div>
+                            <div class="score-badge">
+                                🕐 Freshness
+                                <div class="score-bar">
+                                    <div class="score-fill freshness" style="width: ${result.freshness_score * 100}%"></div>
+                                </div>
+                            </div>
+                            <div class="score-badge">
+                                🏛️ Authority
+                                <div class="score-bar">
+                                    <div class="score-fill authority" style="width: ${result.authority_score * 100}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+        }
+
+        function formatAnswer(text) {
+            // Convert [1], [2] citations to links
+            return text.replace(/\[(\d+)\]/g, '<sup>[$1]</sup>');
+        }
+
+        function truncate(text, length) {
+            if (!text) return '';
+            return text.length > length ? text.substring(0, length) + '...' : text;
+        }
+
+        function truncateUrl(url) {
+            try {
+                const u = new URL(url);
+                return u.hostname + (u.pathname.length > 30 ? u.pathname.substring(0, 30) + '...' : u.pathname);
+            } catch {
+                return url.substring(0, 50);
+            }
+        }
+    </script>
+</body>
+</html>
