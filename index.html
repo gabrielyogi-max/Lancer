@@ -1224,12 +1224,81 @@
             `).join('')}</div>`;
         }
 
-        function formatMd(t) {
-            return t.replace(/^### (.+)$/gm, '<h3>$1</h3>').replace(/^## (.+)$/gm, '<h2>$1</h2>').replace(/^# (.+)$/gm, '<h1>$1</h1>')
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>')
+        function formatInline(text) {
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
                 .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
-                .replace(/\n\n/g, '</p><p>').replace(/^- (.+)$/gm, '<li>$1</li>')
                 .replace(/\[(\d+)\]/g, '<a href="#source-$1" class="citation" onclick="scrollToSource($1); return false;">[$1]</a>');
+        }
+
+        function formatMd(text) {
+            const lines = text.replace(/\r\n/g, '\n').split('\n');
+            let html = '';
+            let paragraph = [];
+            let listType = null;
+
+            const flushParagraph = () => {
+                if (!paragraph.length) return;
+                html += `<p>${formatInline(paragraph.join(' '))}</p>`;
+                paragraph = [];
+            };
+
+            const closeList = () => {
+                if (!listType) return;
+                html += `</${listType}>`;
+                listType = null;
+            };
+
+            const openList = (type) => {
+                if (listType === type) return;
+                if (listType) {
+                    html += `</${listType}>`;
+                }
+                html += `<${type}>`;
+                listType = type;
+            };
+
+            for (const rawLine of lines) {
+                const line = rawLine.trim();
+                if (!line) {
+                    flushParagraph();
+                    closeList();
+                    continue;
+                }
+
+                const headingMatch = line.match(/^(#{1,3})\s+(.*)$/);
+                if (headingMatch) {
+                    flushParagraph();
+                    closeList();
+                    const level = headingMatch[1].length;
+                    html += `<h${level}>${formatInline(headingMatch[2])}</h${level}>`;
+                    continue;
+                }
+
+                const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
+                if (orderedMatch) {
+                    flushParagraph();
+                    openList('ol');
+                    html += `<li>${formatInline(orderedMatch[1])}</li>`;
+                    continue;
+                }
+
+                const bulletMatch = line.match(/^[-*]\s+(.*)$/);
+                if (bulletMatch) {
+                    flushParagraph();
+                    openList('ul');
+                    html += `<li>${formatInline(bulletMatch[1])}</li>`;
+                    continue;
+                }
+
+                closeList();
+                paragraph.push(line);
+            }
+
+            flushParagraph();
+            closeList();
+            return html;
         }
 
         function scrollToSource(num) {
