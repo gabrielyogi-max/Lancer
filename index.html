@@ -591,6 +591,22 @@
             font-size: 0.75em;
         }
 
+        .answer-content .citation {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+
+        .answer-content .citation:hover {
+            text-decoration: underline;
+        }
+
+        .source-item {
+            transition: background 0.3s ease;
+        }
+
         .sources-section {
             margin-top: 1rem;
             padding-top: 1rem;
@@ -1197,14 +1213,14 @@
         function renderSources(sources) {
             if (!sources.length) return '';
             return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => `
-                <div class="source-item"><div class="source-num">${i + 1}</div><a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a></div>
+                <div class="source-item" id="source-${i + 1}"><div class="source-num">${i + 1}</div><a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a></div>
             `).join('')}</div>`;
         }
 
         function renderSourcesHeavy(sources) {
             if (!sources.length) return '';
             return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => `
-                <div class="source-item"><div class="source-num">${i + 1}</div><a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a><span class="source-badge ${s.scraped ? 'scraped' : ''}">${s.scraped ? 'Full' : 'Snippet'}</span></div>
+                <div class="source-item" id="source-${i + 1}"><div class="source-num">${i + 1}</div><a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a><span class="source-badge ${s.scraped ? 'scraped' : ''}">${s.scraped ? 'Full' : 'Snippet'}</span></div>
             `).join('')}</div>`;
         }
 
@@ -1212,7 +1228,17 @@
             return t.replace(/^### (.+)$/gm, '<h3>$1</h3>').replace(/^## (.+)$/gm, '<h2>$1</h2>').replace(/^# (.+)$/gm, '<h1>$1</h1>')
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>')
                 .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
-                .replace(/\n\n/g, '</p><p>').replace(/^- (.+)$/gm, '<li>$1</li>').replace(/\[(\d+)\]/g, '<sup>[$1]</sup>');
+                .replace(/\n\n/g, '</p><p>').replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/\[(\d+)\]/g, '<a href="#source-$1" class="citation" onclick="scrollToSource($1); return false;">[$1]</a>');
+        }
+
+        function scrollToSource(num) {
+            const el = document.getElementById('source-' + num);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.background = 'var(--accent-soft)';
+                setTimeout(() => el.style.background = '', 1500);
+            }
         }
 
         function escapeHtml(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
