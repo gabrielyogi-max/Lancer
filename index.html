@@ -931,6 +931,8 @@
 
     <script>
         const API_BASE = 'https://madras1-lancer.hf.space/api/v1';
+        const RESULT_CACHE_KEY = 'lancer_results_cache';
+        const MAX_CACHE_ITEMS = 20;
         let currentFreshness = 'any';
         let currentMode = 'quick';
         let history = JSON.parse(localStorage.getItem('lancer_history') || '[]');
@@ -954,17 +956,76 @@
 
             document.querySelectorAll('.filter-chip').forEach(chip => {
                 chip.addEventListener('click', () => {
-                    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-                    chip.classList.add('active');
-                    currentFreshness = chip.dataset.freshness;
+                    setFreshness(chip.dataset.freshness);
                 });
             });
         });
 
+        function setFreshness(freshness) {
+            currentFreshness = freshness || 'any';
+            document.querySelectorAll('.filter-chip').forEach(c => {
+                c.classList.toggle('active', c.dataset.freshness === currentFreshness);
+            });
+        }
+
+        function getCacheKey(query, mode, freshness) {
+            const encodedQuery = encodeURIComponent(query).replace(/'/g, '%27');
+            return `${mode}|${freshness}|${encodedQuery}`;
+        }
+
+        function loadResultCache() {
+            try {
+                return JSON.parse(localStorage.getItem(RESULT_CACHE_KEY) || '{}');
+            } catch {
+                return {};
+            }
+        }
+
+        function saveResultCache(cache) {
+            try {
+                localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache));
+            } catch (e) {
+                console.log('Cache save error:', e);
+            }
+        }
+
+        function cacheRenderedResult(query, mode, freshness, html) {
+            if (!html) return;
+            const cache = loadResultCache();
+            const key = getCacheKey(query, mode, freshness);
+            cache[key] = {
+                query,
+                mode,
+                freshness,
+                html,
+                timestamp: Date.now(),
+            };
+            const entries = Object.entries(cache);
+            entries.sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+            const trimmed = entries.slice(0, MAX_CACHE_ITEMS);
+            saveResultCache(Object.fromEntries(trimmed));
+        }
+
+        function getCachedResult(query, mode, freshness) {
+            const cache = loadResultCache();
+            return cache[getCacheKey(query, mode, freshness)];
+        }
+
+        function renderCachedResult(cached) {
+            if (!cached || !cached.html) return false;
+            document.getElementById('hero').classList.add('compact');
+            document.getElementById('results').innerHTML = cached.html;
+            return true;
+        }
+
         // History
-        function addToHistory(query, mode) {
-            const item = { query, mode, timestamp: Date.now() };
-            history = [item, ...history.filter(h => h.query !== query)].slice(0, 20);
+        function addToHistory(query, mode, freshness) {
+            const item = { query, mode, freshness, timestamp: Date.now() };
+            const key = getCacheKey(query, mode, freshness);
+            history = [
+                item,
+                ...history.filter(h => getCacheKey(h.query, h.mode, h.freshness || 'any') !== key),
+            ].slice(0, MAX_CACHE_ITEMS);
             localStorage.setItem('lancer_history', JSON.stringify(history));
             renderHistory();
         }
@@ -975,26 +1036,36 @@
                 list.innerHTML = '<li class="history-empty">No searches yet</li>';
                 return;
             }
-            list.innerHTML = history.map(h => `
-                <li class="history-item" onclick="loadFromHistory('${encodeURIComponent(h.query)}', '${h.mode}')">
+            list.innerHTML = history.map(h => {
+                const encodedQuery = encodeURIComponent(h.query).replace(/'/g, '%27');
+                const freshness = h.freshness || 'any';
+                return `
+                <li class="history-item" onclick="loadFromHistory('${encodedQuery}', '${h.mode}', '${freshness}')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
                     <span>${escapeHtml(h.query)}</span>
                 </li>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        function loadFromHistory(encodedQuery, mode) {
+        function loadFromHistory(encodedQuery, mode, freshness) {
             const query = decodeURIComponent(encodedQuery);
             document.getElementById('searchInput').value = query;
             setMode(mode);
-            executeSearch();
+            setFreshness(freshness || 'any');
+            const cached = getCachedResult(query, mode, freshness || 'any');
+            if (!renderCachedResult(cached)) {
+                document.getElementById('results').innerHTML =
+                    '<div class="answer-card"><div class="answer-content">Sem cache local para essa busca. Clique em Buscar para reexecutar.</div></div>';
+            }
         }
 
         function clearHistory() {
             history = [];
             localStorage.removeItem('lancer_history');
+            localStorage.removeItem(RESULT_CACHE_KEY);
             renderHistory();
         }
 
@@ -1054,7 +1125,7 @@
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
             document.getElementById('hero').classList.add('compact');
-            addToHistory(query, currentMode);
+            addToHistory(query, currentMode, currentFreshness);
             if (currentMode === 'quick') quickSearch(query);
             else if (currentMode === 'heavy') heavySearch(query);
             else deepResearch(query);
@@ -1063,6 +1134,8 @@
         async function quickSearch(query) {
             const results = document.getElementById('results');
             const btn = document.getElementById('searchBtn');
+            const freshness = currentFreshness;
+            const mode = currentMode;
             btn.disabled = true;
             results.innerHTML = '<div class="progress-bar"><div class="progress-step active"><span class="spinner"></span> Searching...</div></div>';
 
@@ -1070,10 +1143,10 @@
                 const res = await fetch(`${API_BASE}/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, max_results: 10, freshness: currentFreshness, include_answer: true })
+                    body: JSON.stringify({ query, max_results: 10, freshness: freshness, include_answer: true })
                 });
                 const data = await res.json();
-                await displayResults(data, 'Quick Answer', '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', query);
+                await displayResults(data, 'Quick Answer', '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', query, mode, freshness);
             } catch (e) {
                 results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
             } finally {
@@ -1084,6 +1157,8 @@
         async function heavySearch(query) {
             const results = document.getElementById('results');
             const btn = document.getElementById('searchBtn');
+            const freshness = currentFreshness;
+            const mode = currentMode;
             btn.disabled = true;
             results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Searching sources...</div></div>';
 
@@ -1092,7 +1167,7 @@
                 const res = await fetch(`${API_BASE}/search/heavy`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, max_results: 15, freshness: currentFreshness, include_answer: true })
+                    body: JSON.stringify({ query, max_results: 15, freshness: freshness, include_answer: true })
                 });
                 const reader = res.body.getReader();
                 const decoder = new TextDecoder();
@@ -1118,6 +1193,7 @@
                         ${images.length ? renderImages(images) : ''}
                         ${renderSourcesHeavy(sources)}
                     </div>`;
+                    cacheRenderedResult(query, mode, freshness, results.innerHTML);
                 }
             } catch (e) {
                 results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
@@ -1129,6 +1205,8 @@
         async function deepResearch(query) {
             const results = document.getElementById('results');
             const btn = document.getElementById('searchBtn');
+            const freshness = currentFreshness;
+            const mode = currentMode;
             btn.disabled = true;
             results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Planning research...</div></div>';
 
@@ -1159,6 +1237,7 @@
                         <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Research Report</span></div>
                         <div class="answer-content">${formatMd(report)}</div>
                     </div>`;
+                    cacheRenderedResult(query, mode, freshness, results.innerHTML);
                 }
             } catch (e) {
                 results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
@@ -1167,7 +1246,7 @@
             }
         }
 
-        async function displayResults(data, label, icon, query) {
+        async function displayResults(data, label, icon, query, mode, freshness) {
             const results = document.getElementById('results');
             if (data.answer) {
                 // Fetch images in parallel
@@ -1178,6 +1257,7 @@
                     ${images.length ? renderImages(images) : ''}
                     ${data.results?.length ? renderSources(data.results.slice(0, 5)) : ''}
                 </div>`;
+                cacheRenderedResult(query, mode, freshness, results.innerHTML);
             }
         }
 
