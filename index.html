@@ -664,12 +664,34 @@
             border-radius: 3px;
             background: var(--bg-tertiary);
             color: var(--text-muted);
-            margin-left: auto;
+            margin-left: 0.25rem;
+            flex-shrink: 0;
         }
 
         .source-badge.scraped {
             background: var(--accent-soft);
             color: var(--accent);
+        }
+
+        .source-badge.engine {
+            background: #2a2a5a;
+            color: #8b8bff;
+        }
+
+        .source-badge.score {
+            background: #1a3a1a;
+            color: #6bff6b;
+            font-weight: 600;
+        }
+
+        [data-theme="light"] .source-badge.engine {
+            background: #e8e8ff;
+            color: #5555cc;
+        }
+
+        [data-theme="light"] .source-badge.score {
+            background: #e8ffe8;
+            color: #339933;
         }
 
         /* Image Gallery */
@@ -1375,16 +1397,33 @@
 
         function renderSources(sources) {
             if (!sources.length) return '';
-            return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => `
-                <div class="source-item" id="source-${i + 1}"><div class="source-num">${i + 1}</div><a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a></div>
-            `).join('')}</div>`;
+            return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => {
+                const engine = s.source ? s.source.split(':').pop() : '';
+                const scorePercent = s.score ? Math.round(s.score * 100) : 0;
+                return `
+                <div class="source-item" id="source-${i + 1}">
+                    <div class="source-num">${i + 1}</div>
+                    <a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a>
+                    ${engine ? `<span class="source-badge engine">${engine}</span>` : ''}
+                    ${scorePercent > 0 ? `<span class="source-badge score" title="Confidence: ${scorePercent}%">${scorePercent}%</span>` : ''}
+                </div>`;
+            }).join('')}</div>`;
         }
 
         function renderSourcesHeavy(sources) {
             if (!sources.length) return '';
-            return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => `
-                <div class="source-item" id="source-${i + 1}"><div class="source-num">${i + 1}</div><a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a><span class="source-badge ${s.scraped ? 'scraped' : ''}">${s.scraped ? 'Full' : 'Snippet'}</span></div>
-            `).join('')}</div>`;
+            return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => {
+                const engine = s.source ? s.source.split(':').pop() : '';
+                const scorePercent = s.score ? Math.round(s.score * 100) : 0;
+                return `
+                <div class="source-item" id="source-${i + 1}">
+                    <div class="source-num">${i + 1}</div>
+                    <a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a>
+                    <span class="source-badge ${s.scraped ? 'scraped' : ''}">${s.scraped ? '📄 Full' : '📋 Snippet'}</span>
+                    ${engine ? `<span class="source-badge engine">${engine}</span>` : ''}
+                    ${scorePercent > 0 ? `<span class="source-badge score" title="Confidence: ${scorePercent}%">${scorePercent}%</span>` : ''}
+                </div>`;
+            }).join('')}</div>`;
         }
 
         function formatInline(text) {
