@@ -925,6 +925,22 @@
                                 </svg>
                                 SearXNG
                             </button>
+                            <button class="mode-btn" id="modeCode" onclick="setMode('code')"
+                                title="Search GitHub, StackOverflow, and code repositories">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6" />
+                                    <polyline points="8 6 2 12 8 18" />
+                                </svg>
+                                Code
+                            </button>
+                            <button class="mode-btn" id="modeAcademic" onclick="setMode('academic')"
+                                title="Search arXiv, Google Scholar, and academic papers">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                </svg>
+                                Academic
+                            </button>
                         </div>
 
                         <div class="search-box">
@@ -1143,12 +1159,19 @@
         // Mode
         function setMode(mode) {
             currentMode = mode;
-            ['quick', 'heavy', 'deep', 'searxng'].forEach(m => {
+            ['quick', 'heavy', 'deep', 'searxng', 'code', 'academic'].forEach(m => {
                 document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1))
                     .classList.toggle('active', m === mode);
             });
-            document.getElementById('filtersContainer').style.display = (mode === 'deep' || mode === 'searxng') ? 'none' : 'flex';
-            const placeholders = { quick: 'Ask anything...', heavy: 'Deep content analysis...', deep: 'Complex research topic...', searxng: 'SearXNG + Embedding rerank...' };
+            document.getElementById('filtersContainer').style.display = ['deep', 'searxng', 'code', 'academic'].includes(mode) ? 'none' : 'flex';
+            const placeholders = {
+                quick: 'Ask anything...',
+                heavy: 'Deep content analysis...',
+                deep: 'Complex research topic...',
+                searxng: 'SearXNG + Embedding rerank...',
+                code: 'Search code, GitHub, StackOverflow...',
+                academic: 'Search papers, arXiv, Google Scholar...'
+            };
             document.getElementById('searchInput').placeholder = placeholders[mode];
         }
 
@@ -1161,6 +1184,8 @@
             if (currentMode === 'quick') quickSearch(query);
             else if (currentMode === 'heavy') heavySearch(query);
             else if (currentMode === 'searxng') searxngSearch(query);
+            else if (currentMode === 'code') codeSearch(query);
+            else if (currentMode === 'academic') academicSearch(query);
             else deepResearch(query);
         }
 
@@ -1297,6 +1322,122 @@
                             <div class="sources-title">Sources (ranked by embedding similarity)</div>
                             ${sourcesHtml}
                         </div>
+                    </div>`;
+                    cacheRenderedResult(query, mode, 'any', results.innerHTML);
+                }
+            } catch (e) {
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function codeSearch(query) {
+            const results = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+            const mode = currentMode;
+            btn.disabled = true;
+            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Searching code repositories...</div></div>';
+
+            let searchResults = [];
+            try {
+                const res = await fetch(`${API_BASE}/search/code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, max_results: 15, freshness: 'any' })
+                });
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    for (const line of decoder.decode(value).split('\n')) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const d = JSON.parse(line.slice(6));
+                                if (d.type === 'status') {
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                }
+                                if (d.type === 'search_complete') {
+                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
+                                }
+                                if (d.type === 'results') {
+                                    searchResults = d.results;
+                                }
+                                if (d.type === 'error') {
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    return;
+                                }
+                            } catch { }
+                        }
+                    }
+                }
+                if (searchResults.length) {
+                    results.innerHTML = `<div class="answer-card fade-in">
+                        <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code Search</span></div>
+                        <div class="answer-content">
+                            <p><strong>Code repositories and programming Q&A.</strong></p>
+                            <p>Found ${searchResults.length} results from GitHub, StackOverflow, and more.</p>
+                        </div>
+                        ${renderSources(searchResults)}
+                    </div>`;
+                    cacheRenderedResult(query, mode, 'any', results.innerHTML);
+                }
+            } catch (e) {
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function academicSearch(query) {
+            const results = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+            const mode = currentMode;
+            btn.disabled = true;
+            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Searching academic sources...</div></div>';
+
+            let searchResults = [];
+            try {
+                const res = await fetch(`${API_BASE}/search/academic`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, max_results: 15, freshness: 'any' })
+                });
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    for (const line of decoder.decode(value).split('\n')) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const d = JSON.parse(line.slice(6));
+                                if (d.type === 'status') {
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                }
+                                if (d.type === 'search_complete') {
+                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
+                                }
+                                if (d.type === 'results') {
+                                    searchResults = d.results;
+                                }
+                                if (d.type === 'error') {
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    return;
+                                }
+                            } catch { }
+                        }
+                    }
+                }
+                if (searchResults.length) {
+                    results.innerHTML = `<div class="answer-card fade-in">
+                        <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Academic Search</span></div>
+                        <div class="answer-content">
+                            <p><strong>Academic papers and research.</strong></p>
+                            <p>Found ${searchResults.length} results from arXiv, Google Scholar, and more.</p>
+                        </div>
+                        ${renderSources(searchResults)}
                     </div>`;
                     cacheRenderedResult(query, mode, 'any', results.innerHTML);
                 }
