@@ -893,6 +893,16 @@
                                 </svg>
                                 Deep
                             </button>
+                            <button class="mode-btn" id="modeSearxng" onclick="setMode('searxng')"
+                                title="Experimental: SearXNG + Embeddings">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                                </svg>
+                                SearXNG
+                            </button>
                         </div>
 
                         <div class="search-box">
@@ -1111,12 +1121,12 @@
         // Mode
         function setMode(mode) {
             currentMode = mode;
-            ['quick', 'heavy', 'deep'].forEach(m => {
+            ['quick', 'heavy', 'deep', 'searxng'].forEach(m => {
                 document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1))
                     .classList.toggle('active', m === mode);
             });
-            document.getElementById('filtersContainer').style.display = mode === 'deep' ? 'none' : 'flex';
-            const placeholders = { quick: 'Ask anything...', heavy: 'Deep content analysis...', deep: 'Complex research topic...' };
+            document.getElementById('filtersContainer').style.display = (mode === 'deep' || mode === 'searxng') ? 'none' : 'flex';
+            const placeholders = { quick: 'Ask anything...', heavy: 'Deep content analysis...', deep: 'Complex research topic...', searxng: 'SearXNG + Embedding rerank...' };
             document.getElementById('searchInput').placeholder = placeholders[mode];
         }
 
@@ -1128,6 +1138,7 @@
             addToHistory(query, currentMode, currentFreshness);
             if (currentMode === 'quick') quickSearch(query);
             else if (currentMode === 'heavy') heavySearch(query);
+            else if (currentMode === 'searxng') searxngSearch(query);
             else deepResearch(query);
         }
 
@@ -1194,6 +1205,78 @@
                         ${renderSourcesHeavy(sources)}
                     </div>`;
                     cacheRenderedResult(query, mode, freshness, results.innerHTML);
+                }
+            } catch (e) {
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function searxngSearch(query) {
+            const results = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+            const mode = currentMode;
+            btn.disabled = true;
+            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Searching SearXNG...</div></div>';
+
+            let searchResults = [];
+            try {
+                const res = await fetch(`${API_BASE}/search/searxng`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, max_results: 10, freshness: 'any' })
+                });
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    for (const line of decoder.decode(value).split('\n')) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const d = JSON.parse(line.slice(6));
+                                if (d.type === 'status') {
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                }
+                                if (d.type === 'searxng_complete') {
+                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
+                                }
+                                if (d.type === 'results') {
+                                    searchResults = d.results;
+                                }
+                                if (d.type === 'done') {
+                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Reranked to ${d.returned} results</div>`;
+                                }
+                                if (d.type === 'error') {
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    return;
+                                }
+                            } catch { }
+                        }
+                    }
+                }
+                if (searchResults.length) {
+                    const sourcesHtml = searchResults.map((r, i) => `
+                        <div class="source-item">
+                            <div class="source-num">${i + 1}</div>
+                            <a href="${r.url}" target="_blank" class="source-title">${escapeHtml(r.title)}</a>
+                            <span class="source-badge">${r.source}</span>
+                        </div>
+                    `).join('');
+
+                    results.innerHTML = `<div class="answer-card fade-in">
+                        <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>SearXNG + Embeddings</span></div>
+                        <div class="answer-content">
+                            <p><strong>Results reranked with embedding similarity.</strong></p>
+                            <p>Found ${searchResults.length} most relevant results from SearXNG meta-search.</p>
+                        </div>
+                        <div class="sources-section">
+                            <div class="sources-title">Sources (ranked by embedding similarity)</div>
+                            ${sourcesHtml}
+                        </div>
+                    </div>`;
+                    cacheRenderedResult(query, mode, 'any', results.innerHTML);
                 }
             } catch (e) {
                 results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
