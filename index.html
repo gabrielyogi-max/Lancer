@@ -49,7 +49,164 @@
             color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
-            transition: background 0.2s, color 0.2s;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Animations & Keyframes */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Respect reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Animated classes */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.4s ease-out;
+        }
+
+        /* Staggered animation for lists */
+        .stagger-item {
+            animation: slideIn 0.3s ease-out both;
+        }
+
+        .stagger-item:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .stagger-item:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .stagger-item:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .stagger-item:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .stagger-item:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .stagger-item:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        .stagger-item:nth-child(7) {
+            animation-delay: 0.35s;
+        }
+
+        .stagger-item:nth-child(8) {
+            animation-delay: 0.4s;
+        }
+
+        .stagger-item:nth-child(9) {
+            animation-delay: 0.45s;
+        }
+
+        .stagger-item:nth-child(10) {
+            animation-delay: 0.5s;
+        }
+
+        /* Skeleton loading effect */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
         }
 
         /* Layout with Sidebar */
@@ -346,7 +503,7 @@
             font-weight: 500;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -354,11 +511,13 @@
 
         .mode-btn:hover {
             color: var(--text-secondary);
+            transform: translateY(-1px);
         }
 
         .mode-btn.active {
             background: var(--bg-tertiary);
             color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .mode-btn svg {
@@ -411,12 +570,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             flex-shrink: 0;
         }
 
         .search-btn:hover {
             background: var(--accent-hover);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(16, 163, 127, 0.4);
+        }
+
+        .search-btn:active {
+            transform: scale(0.95);
         }
 
         .search-btn:disabled {
@@ -510,6 +675,13 @@
             border-radius: 14px;
             padding: 1.25rem;
             margin-bottom: 1rem;
+            animation: slideUp 0.4s ease-out;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .answer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
         }
 
         .answer-header {
@@ -626,11 +798,53 @@
             padding: 0.5rem;
             margin: 0 -0.5rem;
             border-radius: 6px;
-            transition: background 0.15s;
+            transition: all 0.2s ease;
+            animation: slideIn 0.3s ease-out both;
+        }
+
+        .source-item:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .source-item:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .source-item:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .source-item:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .source-item:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .source-item:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        .source-item:nth-child(7) {
+            animation-delay: 0.35s;
+        }
+
+        .source-item:nth-child(8) {
+            animation-delay: 0.4s;
+        }
+
+        .source-item:nth-child(9) {
+            animation-delay: 0.45s;
+        }
+
+        .source-item:nth-child(10) {
+            animation-delay: 0.5s;
         }
 
         .source-item:hover {
             background: var(--bg-hover);
+            transform: translateX(4px);
         }
 
         .source-num {
