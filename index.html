@@ -1150,6 +1150,16 @@
                                 </svg>
                                 Academic
                             </button>
+                            <button class="mode-btn" id="modeBrowse" onclick="setMode('browse')"
+                                title="Browser Agent - navigate websites using AI">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                    <path
+                                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                </svg>
+                                Browse
+                            </button>
                         </div>
 
                         <div class="search-box">
@@ -1368,18 +1378,19 @@
         // Mode
         function setMode(mode) {
             currentMode = mode;
-            ['quick', 'heavy', 'deep', 'searxng', 'code', 'academic'].forEach(m => {
+            ['quick', 'heavy', 'deep', 'searxng', 'code', 'academic', 'browse'].forEach(m => {
                 document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1))
                     .classList.toggle('active', m === mode);
             });
-            document.getElementById('filtersContainer').style.display = ['deep', 'searxng', 'code', 'academic'].includes(mode) ? 'none' : 'flex';
+            document.getElementById('filtersContainer').style.display = ['deep', 'searxng', 'code', 'academic', 'browse'].includes(mode) ? 'none' : 'flex';
             const placeholders = {
                 quick: 'Ask anything...',
                 heavy: 'Deep content analysis...',
                 deep: 'Complex research topic...',
                 searxng: 'SearXNG + Embedding rerank...',
                 code: 'Search code, GitHub, StackOverflow...',
-                academic: 'Search papers, arXiv, Google Scholar...'
+                academic: 'Search papers, arXiv, Google Scholar...',
+                browse: 'Navigate a website... (e.g., "Get headlines from https://news.ycombinator.com")'
             };
             document.getElementById('searchInput').placeholder = placeholders[mode];
         }
@@ -1395,6 +1406,7 @@
             else if (currentMode === 'searxng') searxngSearch(query);
             else if (currentMode === 'code') codeSearch(query);
             else if (currentMode === 'academic') academicSearch(query);
+            else if (currentMode === 'browse') browseAgent(query);
             else deepResearch(query);
         }
 
@@ -1647,6 +1659,67 @@
                             <p>Found ${searchResults.length} results from arXiv, Google Scholar, and more.</p>
                         </div>
                         ${renderSources(searchResults)}
+                    </div>`;
+                    cacheRenderedResult(query, mode, 'any', results.innerHTML);
+                }
+            } catch (e) {
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function browseAgent(query) {
+            const results = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+            const mode = currentMode;
+            btn.disabled = true;
+            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Initializing browser agent...</div></div>';
+
+            // Extract URL from query if present
+            const urlMatch = query.match(/https?:\/\/[^\s]+/);
+            const url = urlMatch ? urlMatch[0] : null;
+            const task = query;
+
+            try {
+                const res = await fetch(`${API_BASE}/agent/browse`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task, url })
+                });
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let resultContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    for (const line of decoder.decode(value).split('\n')) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const d = JSON.parse(line.slice(6));
+                                if (d.type === 'status') {
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                }
+                                if (d.type === 'result') {
+                                    resultContent = d.content;
+                                }
+                                if (d.type === 'complete') {
+                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ ${d.message}</div>`;
+                                }
+                                if (d.type === 'error') {
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    return;
+                                }
+                            } catch { }
+                        }
+                    }
+                }
+
+                if (resultContent) {
+                    results.innerHTML = `<div class="answer-card fade-in">
+                        <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Browser Agent</span></div>
+                        <div class="answer-content">${escapeHtml(resultContent).replace(/\n/g, '<br>')}</div>
                     </div>`;
                     cacheRenderedResult(query, mode, 'any', results.innerHTML);
                 }
