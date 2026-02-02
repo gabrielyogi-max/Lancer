@@ -1694,15 +1694,18 @@
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    for (const line of decoder.decode(value).split('\n')) {
+                    const chunk = decoder.decode(value, { stream: true });
+                    for (const line of chunk.split('\n')) {
                         if (line.startsWith('data: ')) {
                             try {
                                 const d = JSON.parse(line.slice(6));
+                                console.log('SSE event:', d);
                                 if (d.type === 'status') {
                                     document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
                                 }
                                 if (d.type === 'result') {
-                                    resultContent = d.content;
+                                    resultContent = d.content || '';
+                                    console.log('Got result:', resultContent.substring(0, 100));
                                 }
                                 if (d.type === 'complete') {
                                     document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ ${d.message}</div>`;
@@ -1711,17 +1714,25 @@
                                     results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
                                     return;
                                 }
-                            } catch { }
+                            } catch (e) {
+                                console.log('Parse error:', e, 'line:', line);
+                            }
                         }
                     }
                 }
 
+                // Render result
                 if (resultContent) {
                     results.innerHTML = `<div class="answer-card fade-in">
                         <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Browser Agent</span></div>
                         <div class="answer-content">${escapeHtml(resultContent).replace(/\n/g, '<br>')}</div>
                     </div>`;
                     cacheRenderedResult(query, mode, 'any', results.innerHTML);
+                } else {
+                    results.innerHTML = `<div class="answer-card fade-in">
+                        <div class="answer-header"><span class="badge">Browser Agent</span></div>
+                        <div class="answer-content">Tarefa concluída, mas não houve resposta do LLM. Tente novamente.</div>
+                    </div>`;
                 }
             } catch (e) {
                 results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
