@@ -1674,7 +1674,7 @@
             const btn = document.getElementById('searchBtn');
             const mode = currentMode;
             btn.disabled = true;
-            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Initializing browser agent...</div></div>';
+            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Initializing browser agent...</div></div><div id="browserStream"></div>';
 
             // Extract URL from query if present
             const urlMatch = query.match(/https?:\/\/[^\s]+/);
@@ -1690,6 +1690,7 @@
                 const reader = res.body.getReader();
                 const decoder = new TextDecoder();
                 let resultContent = '';
+                let streamActive = false;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -1699,13 +1700,28 @@
                         if (line.startsWith('data: ')) {
                             try {
                                 const d = JSON.parse(line.slice(6));
-                                console.log('SSE event:', d);
                                 if (d.type === 'status') {
                                     document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
                                 }
+                                if (d.type === 'stream' && d.url) {
+                                    // Show live browser stream
+                                    streamActive = true;
+                                    document.getElementById('browserStream').innerHTML = `
+                                        <div class="browser-stream-container" style="margin: 16px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 16px; color: white; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                                <span class="spinner"></span>
+                                                🌐 Live Browser View
+                                            </div>
+                                            <iframe src="${d.url}" style="width: 100%; height: 400px; border: none; background: #1a1a2e;"></iframe>
+                                        </div>`;
+                                }
+                                if (d.type === 'stream_end') {
+                                    // Hide stream when done
+                                    streamActive = false;
+                                    document.getElementById('browserStream').innerHTML = '';
+                                }
                                 if (d.type === 'result') {
                                     resultContent = d.content || '';
-                                    console.log('Got result:', resultContent.substring(0, 100));
                                 }
                                 if (d.type === 'complete') {
                                     document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ ${d.message}</div>`;
@@ -1714,9 +1730,7 @@
                                     results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
                                     return;
                                 }
-                            } catch (e) {
-                                console.log('Parse error:', e, 'line:', line);
-                            }
+                            } catch (e) { }
                         }
                     }
                 }
