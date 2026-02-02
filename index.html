@@ -1716,9 +1716,16 @@
                                         </div>`;
                                 }
                                 if (d.type === 'stream_end') {
-                                    // Hide stream when done
+                                    // Fade out stream after 5 seconds
+                                    setTimeout(() => {
+                                        const streamEl = document.getElementById('browserStream');
+                                        if (streamEl) {
+                                            streamEl.style.transition = 'opacity 0.5s ease-out';
+                                            streamEl.style.opacity = '0';
+                                            setTimeout(() => { streamEl.innerHTML = ''; streamEl.style.opacity = '1'; }, 500);
+                                        }
+                                    }, 5000);
                                     streamActive = false;
-                                    document.getElementById('browserStream').innerHTML = '';
                                 }
                                 if (d.type === 'result') {
                                     resultContent = d.content || '';
