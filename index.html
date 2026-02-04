@@ -1191,6 +1191,17 @@
                             <button class="filter-chip" data-freshness="week">This week</button>
                             <button class="filter-chip" data-freshness="month">This month</button>
                         </div>
+
+                        <!-- Stream Visual Toggle (only shows in browse mode) -->
+                        <div class="filters" id="streamToggleContainer" style="display: none;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; background: var(--bg-tertiary); border-radius: 18px; border: 1px solid var(--border);">
+                                <input type="checkbox" id="streamVisualToggle"
+                                    style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">🎥 Stream Visual
+                                    (Chrome)</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -1395,6 +1406,8 @@
                     .classList.toggle('active', m === mode);
             });
             document.getElementById('filtersContainer').style.display = ['deep', 'searxng', 'code', 'academic', 'browse'].includes(mode) ? 'none' : 'flex';
+            // Show stream toggle only for browse mode
+            document.getElementById('streamToggleContainer').style.display = mode === 'browse' ? 'flex' : 'none';
             const placeholders = {
                 quick: 'Ask anything...',
                 heavy: 'Deep content analysis...',
@@ -1694,10 +1707,11 @@
             const task = query;
 
             try {
+                const streamVisual = document.getElementById('streamVisualToggle').checked;
                 const res = await fetch(`${API_BASE}/agent/browse`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ task, url })
+                    body: JSON.stringify({ task, url, stream_visual: streamVisual })
                 });
                 const reader = res.body.getReader();
                 const decoder = new TextDecoder();
