@@ -834,6 +834,58 @@
             padding: 0.78rem;
         }
 
+        .browse-progress-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.6rem;
+            padding: 0.82rem;
+        }
+
+        .browse-progress-col {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: color-mix(in srgb, var(--bg-tertiary) 90%, transparent);
+            min-height: 136px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .browse-progress-title {
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 0.6rem 0.65rem 0.45rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+
+        .browse-progress-list {
+            padding: 0.45rem 0.5rem 0.55rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            max-height: 210px;
+            overflow: auto;
+        }
+
+        .browse-progress-item {
+            font-size: 0.79rem;
+            color: var(--text-primary);
+            line-height: 1.36;
+            padding: 0.36rem 0.45rem;
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--bg-primary) 40%, transparent);
+            border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+        }
+
+        .browse-progress-empty {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.35;
+            padding: 0.35rem 0.25rem;
+        }
+
         .browse-stat {
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -981,6 +1033,10 @@
             .browse-status-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
+            .browse-progress-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 640px) {
@@ -990,6 +1046,10 @@
             }
 
             .browse-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .browse-progress-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -2110,6 +2170,26 @@
                             </div>
                             <div class="browse-card">
                                 <div class="browse-card-head">
+                                    <strong>Research Map</strong>
+                                    <span id="browseProgressTag">0 facts · 0 gaps</span>
+                                </div>
+                                <div class="browse-progress-grid">
+                                    <div class="browse-progress-col">
+                                        <div class="browse-progress-title">Known Facts</div>
+                                        <div class="browse-progress-list" id="browseKnownList">
+                                            <div class="browse-progress-empty">No facts collected yet.</div>
+                                        </div>
+                                    </div>
+                                    <div class="browse-progress-col">
+                                        <div class="browse-progress-title">Missing Points</div>
+                                        <div class="browse-progress-list" id="browseMissingList">
+                                            <div class="browse-progress-empty">No active gaps right now.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="browse-card">
+                                <div class="browse-card-head">
                                     <strong>Agent Output</strong>
                                     <span id="browseOutputTag">Collecting context</span>
                                 </div>
@@ -2138,6 +2218,27 @@
             `;
         }
 
+        function renderBrowseProgressMap(knownListEl, missingListEl, progressTagEl, knownFacts = [], missingPoints = []) {
+            const known = Array.isArray(knownFacts) ? knownFacts : [];
+            const missing = Array.isArray(missingPoints) ? missingPoints : [];
+
+            if (progressTagEl) {
+                progressTagEl.textContent = `${known.length} facts · ${missing.length} gaps`;
+            }
+
+            if (knownListEl) {
+                knownListEl.innerHTML = known.length
+                    ? known.map(item => `<div class="browse-progress-item">${escapeHtml(String(item))}</div>`).join('')
+                    : '<div class="browse-progress-empty">No facts collected yet.</div>';
+            }
+
+            if (missingListEl) {
+                missingListEl.innerHTML = missing.length
+                    ? missing.map(item => `<div class="browse-progress-item">${escapeHtml(String(item))}</div>`).join('')
+                    : '<div class="browse-progress-empty">No active gaps right now.</div>';
+            }
+        }
+
         async function browseAgentV2(query) {
             const results = document.getElementById('results');
             const btn = document.getElementById('searchBtn');
@@ -2160,11 +2261,16 @@
             const liveFrame = document.getElementById('browseLiveFrame');
             const livePlaceholder = document.getElementById('browseLivePlaceholder');
             const answerBody = document.getElementById('browseAnswerBody');
+            const knownListEl = document.getElementById('browseKnownList');
+            const missingListEl = document.getElementById('browseMissingList');
+            const progressTagEl = document.getElementById('browseProgressTag');
 
             const stepHistory = [];
             let resultContent = '';
             let resultLinks = [];
             let hasStream = false;
+
+            renderBrowseProgressMap(knownListEl, missingListEl, progressTagEl, [], []);
 
             const elapsedTicker = setInterval(() => {
                 if (!statusElapsed) return;
@@ -2244,6 +2350,16 @@
                                 statusState.textContent = stepType === 'warning' ? 'Handling issue' : 'Running';
                                 outputTag.textContent = 'Collecting context';
                                 renderTrace();
+                            }
+
+                            if (d.type === 'progress') {
+                                renderBrowseProgressMap(
+                                    knownListEl,
+                                    missingListEl,
+                                    progressTagEl,
+                                    d.known_facts || [],
+                                    d.missing_points || []
+                                );
                             }
 
                             if (d.type === 'stream' && d.url) {
