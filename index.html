@@ -7,7 +7,7 @@
     <title>Lancer - AI Search</title>
     <meta name="description" content="AI-powered search with temporal intelligence">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-primary: #0d0d0d;
@@ -645,6 +645,357 @@
             padding: 1rem;
             margin-bottom: 1rem;
             border: 1px solid var(--border);
+        }
+
+        /* Browser Agent UX */
+        .browse-shell {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 15% 0%, rgba(16, 163, 127, 0.16), transparent 42%),
+                radial-gradient(circle at 100% 0%, rgba(64, 129, 255, 0.18), transparent 40%),
+                linear-gradient(160deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+            margin-bottom: 1rem;
+        }
+
+        .browse-header {
+            padding: 1rem 1.1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .browse-title-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .browse-kicker {
+            font-size: 0.68rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .browse-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .browse-mode-tag {
+            font-size: 0.74rem;
+            padding: 0.32rem 0.62rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            white-space: nowrap;
+            font-weight: 600;
+        }
+
+        .browse-layout {
+            display: grid;
+            grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+            gap: 0.9rem;
+            padding: 0.95rem;
+        }
+
+        .browse-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--bg-secondary) 84%, transparent);
+            overflow: hidden;
+        }
+
+        .browse-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.68rem 0.78rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+        }
+
+        .browse-card-head strong {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .browse-trace-list {
+            max-height: 510px;
+            overflow: auto;
+            padding: 0.35rem;
+        }
+
+        .browse-trace-empty {
+            padding: 0.8rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .browse-trace-item {
+            display: grid;
+            grid-template-columns: 8px minmax(0, 1fr) auto;
+            gap: 0.6rem;
+            align-items: start;
+            padding: 0.5rem 0.6rem;
+            border-radius: 10px;
+            margin-bottom: 0.28rem;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .browse-trace-item.is-done {
+            background: color-mix(in srgb, var(--bg-tertiary) 92%, transparent);
+            opacity: 0.84;
+        }
+
+        .browse-trace-item.is-active {
+            border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+            background: color-mix(in srgb, var(--accent) 12%, var(--bg-tertiary));
+            opacity: 1;
+        }
+
+        .browse-trace-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            margin-top: 0.35rem;
+            background: var(--text-muted);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.03);
+        }
+
+        .browse-trace-item.is-active .browse-trace-dot {
+            background: var(--accent);
+            box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.16);
+        }
+
+        .browse-trace-body {
+            min-width: 0;
+        }
+
+        .browse-trace-label {
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .browse-trace-meta {
+            margin-top: 0.12rem;
+            font-size: 0.68rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+        }
+
+        .browse-trace-state {
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 0.22rem 0.44rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .browse-trace-item.is-active .browse-trace-state {
+            color: var(--accent);
+            border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
+        .browse-main-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            min-width: 0;
+        }
+
+        .browse-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding: 0.78rem;
+        }
+
+        .browse-stat {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.56rem 0.62rem;
+            background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+        }
+
+        .browse-stat-label {
+            font-size: 0.64rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            margin-bottom: 0.22rem;
+        }
+
+        .browse-stat-value {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .browse-live-wrap {
+            padding: 0.8rem;
+        }
+
+        .browse-live-frame {
+            width: 100%;
+            min-height: 420px;
+            border: 0;
+            border-radius: 10px;
+            background: #111827;
+            display: block;
+        }
+
+        .browse-live-placeholder {
+            margin-top: 0.75rem;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 0.92rem;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.45;
+            background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+        }
+
+        .browse-live-placeholder strong {
+            color: var(--text-primary);
+        }
+
+        .browse-answer-wrap {
+            padding: 0.95rem;
+        }
+
+        .browse-answer-state {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .browse-answer-state strong {
+            color: var(--text-primary);
+        }
+
+        .browse-answer-content {
+            font-size: 0.92rem;
+            color: var(--text-primary);
+            line-height: 1.72;
+        }
+
+        .browse-answer-content strong {
+            color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
+        }
+
+        .browse-link-list {
+            margin-top: 0.95rem;
+            padding-top: 0.88rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .browse-link-list-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.56rem;
+            font-weight: 600;
+        }
+
+        .browse-link-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.4rem 0.2rem;
+            font-size: 0.79rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        .browse-link-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .browse-link-bullet {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .browse-link-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .browse-stream-off-note {
+            padding: 0.8rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            line-height: 1.45;
+            color: var(--text-secondary);
+            background: color-mix(in srgb, var(--bg-tertiary) 90%, transparent);
+        }
+
+        .browse-stream-off-note strong {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .browse-shell {
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        @media (max-width: 980px) {
+            .browse-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .browse-trace-list {
+                max-height: 260px;
+            }
+
+            .browse-status-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .browse-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .browse-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .browse-live-frame {
+                min-height: 280px;
+            }
         }
 
         .progress-step {
@@ -1431,7 +1782,7 @@
             else if (currentMode === 'searxng') searxngSearch(query);
             else if (currentMode === 'code') codeSearch(query);
             else if (currentMode === 'academic') academicSearch(query);
-            else if (currentMode === 'browse') browseAgent(query);
+            else if (currentMode === 'browse') browseAgentV2(query);
             else deepResearch(query);
         }
 
@@ -1694,164 +2045,265 @@
             }
         }
 
-        async function browseAgent(query) {
+        function getBrowseStepType(message) {
+            const msg = (message || '').toLowerCase();
+            if (msg.includes('search') || msg.includes('busc')) return 'search';
+            if (msg.includes('navigat') || msg.includes('visit')) return 'navigate';
+            if (msg.includes('extract') || msg.includes('fetch')) return 'extract';
+            if (msg.includes('analy') || msg.includes('think') || msg.includes('synth')) return 'analyze';
+            if (msg.includes('complete') || msg.includes('done') || msg.includes('ready')) return 'complete';
+            if (msg.includes('blocked') || msg.includes('error') || msg.includes('fail')) return 'warning';
+            return 'setup';
+        }
+
+        function buildBrowseShell(streamVisual) {
+            const modeLabel = streamVisual ? 'Visual Stream' : 'Stealth Mode';
+            const sessionLabel = streamVisual ? 'Chrome with Live Feed' : 'Headless Camoufox';
+            const streamInfo = streamVisual
+                ? 'Waiting for stream URL from the sandbox. The live viewport appears here as soon as the browser is ready.'
+                : '<strong>Stealth run:</strong> this mode does not expose video stream. Focus on the action timeline and final answer.';
+
+            return `
+                <div class="browse-shell fade-in">
+                    <div class="browse-header">
+                        <div class="browse-title-wrap">
+                            <div class="browse-kicker">Agent Session</div>
+                            <div class="browse-title">Browser Agent Workspace</div>
+                        </div>
+                        <div class="browse-mode-tag" id="browseModeTag">${modeLabel}</div>
+                    </div>
+                    <div class="browse-layout">
+                        <aside class="browse-card">
+                            <div class="browse-card-head">
+                                <strong>Agent Trace</strong>
+                                <span id="browseStepCount">0 steps</span>
+                            </div>
+                            <div class="browse-trace-list" id="browseTraceList">
+                                <div class="browse-trace-empty">Waiting for first action from the agent...</div>
+                            </div>
+                        </aside>
+                        <section class="browse-main-stack">
+                            <div class="browse-card">
+                                <div class="browse-card-head">
+                                    <strong>Session</strong>
+                                    <span id="browseSessionTag">${modeLabel}</span>
+                                </div>
+                                <div class="browse-status-grid">
+                                    <div class="browse-stat">
+                                        <div class="browse-stat-label">Mode</div>
+                                        <div class="browse-stat-value" id="browseStatusMode">${sessionLabel}</div>
+                                    </div>
+                                    <div class="browse-stat">
+                                        <div class="browse-stat-label">Elapsed</div>
+                                        <div class="browse-stat-value" id="browseStatusElapsed">0s</div>
+                                    </div>
+                                    <div class="browse-stat">
+                                        <div class="browse-stat-label">State</div>
+                                        <div class="browse-stat-value" id="browseStatusState">Starting</div>
+                                    </div>
+                                </div>
+                                <div class="browse-live-wrap">
+                                    <iframe class="browse-live-frame" id="browseLiveFrame" title="Browser stream" style="display:none;"></iframe>
+                                    <div class="browse-live-placeholder" id="browseLivePlaceholder">${streamInfo}</div>
+                                </div>
+                                ${streamVisual ? '' : '<div class="browse-stream-off-note"><strong>Tip:</strong> enable "Stream Visual (Chrome)" if you want to follow actions live.</div>'}
+                            </div>
+                            <div class="browse-card">
+                                <div class="browse-card-head">
+                                    <strong>Agent Output</strong>
+                                    <span id="browseOutputTag">Collecting context</span>
+                                </div>
+                                <div class="browse-answer-wrap" id="browseAnswerBody">
+                                    <div class="browse-answer-state"><strong>Agent started.</strong> Gathering pages, signals, and references.</div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBrowseVisitedLinks(links) {
+            if (!links || !links.length) return '';
+            return `
+                <div class="browse-link-list">
+                    <div class="browse-link-list-title">Visited Links</div>
+                    ${links.map(link => `
+                        <a class="browse-link-item" href="${link}" target="_blank" rel="noopener">
+                            <span class="browse-link-bullet"></span>
+                            <span class="browse-link-text">${escapeHtml(link)}</span>
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function browseAgentV2(query) {
             const results = document.getElementById('results');
             const btn = document.getElementById('searchBtn');
-            const mode = currentMode;
-            btn.disabled = true;
-            results.innerHTML = '<div class="progress-bar" id="progressBar"><div class="progress-step active"><span class="spinner"></span> Initializing browser agent...</div></div>';
+            const streamVisual = document.getElementById('streamVisualToggle').checked;
+            const startedAt = Date.now();
 
-            // Extract URL from query if present (optional now - agent can search on its own)
+            btn.disabled = true;
+            results.innerHTML = buildBrowseShell(streamVisual);
+
             const urlMatch = query.match(/https?:\/\/[^\s]+/);
             const url = urlMatch ? urlMatch[0] : null;
             const task = query;
 
+            const traceList = document.getElementById('browseTraceList');
+            const stepCount = document.getElementById('browseStepCount');
+            const statusElapsed = document.getElementById('browseStatusElapsed');
+            const statusState = document.getElementById('browseStatusState');
+            const outputTag = document.getElementById('browseOutputTag');
+            const sessionTag = document.getElementById('browseSessionTag');
+            const liveFrame = document.getElementById('browseLiveFrame');
+            const livePlaceholder = document.getElementById('browseLivePlaceholder');
+            const answerBody = document.getElementById('browseAnswerBody');
+
+            const stepHistory = [];
+            let resultContent = '';
+            let resultLinks = [];
+            let hasStream = false;
+
+            const elapsedTicker = setInterval(() => {
+                if (!statusElapsed) return;
+                const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+                statusElapsed.textContent = `${elapsedSeconds}s`;
+            }, 1000);
+
+            const renderTrace = () => {
+                stepCount.textContent = `${stepHistory.length} ${stepHistory.length === 1 ? 'step' : 'steps'}`;
+
+                if (!stepHistory.length) {
+                    traceList.innerHTML = '<div class="browse-trace-empty">Waiting for first action from the agent...</div>';
+                    return;
+                }
+
+                const visibleSteps = stepHistory.slice(-20);
+                traceList.innerHTML = visibleSteps.map((step, i) => {
+                    const isActive = i === visibleSteps.length - 1 && !step.done;
+                    const rowClass = isActive ? 'is-active' : 'is-done';
+                    return `
+                        <div class="browse-trace-item ${rowClass}">
+                            <span class="browse-trace-dot"></span>
+                            <div class="browse-trace-body">
+                                <div class="browse-trace-label">${escapeHtml(step.message)}</div>
+                                <div class="browse-trace-meta">${step.time}</div>
+                            </div>
+                            <span class="browse-trace-state">${step.label}</span>
+                        </div>
+                    `;
+                }).join('');
+            };
+
             try {
-                const streamVisual = document.getElementById('streamVisualToggle').checked;
                 const res = await fetch(`${API_BASE}/agent/browse`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ task, url, stream_visual: streamVisual })
                 });
+
+                if (!res.ok || !res.body) {
+                    throw new Error(`Request failed (${res.status})`);
+                }
+
                 const reader = res.body.getReader();
                 const decoder = new TextDecoder();
-                let resultContent = '';
-                let resultLinks = [];
-                let stepHistory = [];
+                let sseBuffer = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    const chunk = decoder.decode(value, { stream: true });
-                    for (const line of chunk.split('\n')) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const d = JSON.parse(line.slice(6));
-                                if (d.type === 'status') {
-                                    // Add to step history with icon based on action
-                                    let icon = '🔄';
-                                    const msg = d.message.toLowerCase();
-                                    if (msg.includes('search')) icon = '🔍';
-                                    else if (msg.includes('navigat')) icon = '🌐';
-                                    else if (msg.includes('analyz') || msg.includes('think')) icon = '🤔';
-                                    else if (msg.includes('extract')) icon = '📊';
-                                    else if (msg.includes('scroll')) icon = '📜';
-                                    else if (msg.includes('complet') || msg.includes('done')) icon = '✅';
-                                    else if (msg.includes('launch') || msg.includes('init')) icon = '🚀';
-                                    else if (msg.includes('closing') || msg.includes('dialog')) icon = '🪟';
 
-                                    stepHistory.push({ icon, message: d.message, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
+                    sseBuffer += decoder.decode(value, { stream: true });
+                    const lines = sseBuffer.split('\n');
+                    sseBuffer = lines.pop() || '';
 
-                                    // Show all steps with animation
-                                    const stepsHtml = stepHistory.map((s, i) =>
-                                        `<div class="agent-step ${i === stepHistory.length - 1 ? 'active' : 'done'}" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin: 4px 0; background: ${i === stepHistory.length - 1 ? 'rgba(102,126,234,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 8px; animation: ${i === stepHistory.length - 1 ? 'slideIn 0.3s ease-out' : 'none'};">
-                                            <span style="font-size: 1.2em;">${s.icon}</span>
-                                            <span style="flex: 1; ${i === stepHistory.length - 1 ? 'font-weight: 600;' : 'opacity: 0.7;'}">${s.message}</span>
-                                            ${i === stepHistory.length - 1 ? '<span class="spinner" style="width: 16px; height: 16px;"></span>' : '<span style="color: #4ade80;">✓</span>'}
-                                        </div>`
-                                    ).join('');
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
 
-                                    document.getElementById('progressBar').innerHTML = `
-                                        <div style="border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #1e1e2e 0%, #2d2d3f 100%); padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
-                                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #9ca3af; font-size: 12px;">
-                                                <span style="font-size: 1.3em;">🤖</span>
-                                                <span style="font-weight: 600; color: white;">Browser Agent</span>
-                                                <span style="margin-left: auto;">Step ${stepHistory.length}/10</span>
-                                            </div>
-                                            ${stepsHtml}
-                                        </div>`;
+                        try {
+                            const d = JSON.parse(line.slice(6));
+
+                            if (d.type === 'status') {
+                                const stepType = getBrowseStepType(d.message);
+                                stepHistory.push({
+                                    message: d.message || 'Processing...',
+                                    label: stepType,
+                                    done: false,
+                                    time: new Date().toLocaleTimeString('pt-BR', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit'
+                                    }),
+                                });
+                                if (stepHistory.length > 1) {
+                                    stepHistory[stepHistory.length - 2].done = true;
                                 }
-                                if (d.type === 'stream' && d.url) {
-                                    const streamContainer = document.createElement('div');
-                                    streamContainer.id = 'browserStream';
-                                    streamContainer.innerHTML = `
-                                        <div style="margin: 16px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-                                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 16px; color: white; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                                                <span class="spinner"></span>
-                                                🤖 AI Browser Agent - Live View
-                                            </div>
-                                            <iframe src="${d.url}" style="width: 100%; height: 450px; border: none; background: #1a1a2e;"></iframe>
-                                        </div>`;
-                                    results.insertBefore(streamContainer, document.getElementById('progressBar').nextSibling);
+                                statusState.textContent = stepType === 'warning' ? 'Handling issue' : 'Running';
+                                outputTag.textContent = 'Collecting context';
+                                renderTrace();
+                            }
+
+                            if (d.type === 'stream' && d.url) {
+                                hasStream = true;
+                                liveFrame.style.display = 'block';
+                                liveFrame.src = d.url;
+                                livePlaceholder.style.display = 'none';
+                                sessionTag.textContent = 'Live connected';
+                                statusState.textContent = 'Streaming';
+                            }
+
+                            if (d.type === 'stream_end') {
+                                if (hasStream) {
+                                    sessionTag.textContent = 'Live stream ended';
+                                    livePlaceholder.style.display = 'block';
+                                    livePlaceholder.innerHTML = 'Live session finished. The final summary and links remain available below.';
                                 }
-                                if (d.type === 'stream_end') {
-                                    const streamEl = document.getElementById('browserStream');
-                                    if (streamEl) {
-                                        streamEl.style.transition = 'opacity 0.5s ease-out';
-                                        streamEl.style.opacity = '0';
-                                        setTimeout(() => { if (streamEl) streamEl.remove(); }, 500);
-                                    }
+                            }
+
+                            if (d.type === 'result') {
+                                resultContent = d.content || '';
+                                resultLinks = d.links || [];
+                                outputTag.textContent = 'Draft generated';
+                            }
+
+                            if (d.type === 'complete') {
+                                if (stepHistory.length) {
+                                    stepHistory[stepHistory.length - 1].done = true;
                                 }
-                                if (d.type === 'result') {
-                                    resultContent = d.content || '';
-                                    resultLinks = d.links || [];
-                                }
-                                if (d.type === 'complete') {
-                                    // Mark last step as complete
-                                    if (stepHistory.length > 0) {
-                                        stepHistory[stepHistory.length - 1].icon = '✅';
-                                    }
-                                }
-                                if (d.type === 'error') {
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content" style="color: #f87171;">❌ Error: ${d.message}</div></div>`;
-                                    return;
-                                }
-                            } catch (e) { }
+                                statusState.textContent = 'Complete';
+                                outputTag.textContent = 'Final answer';
+                                renderTrace();
+                            }
+
+                            if (d.type === 'error') {
+                                statusState.textContent = 'Error';
+                                outputTag.textContent = 'Failed';
+                                answerBody.innerHTML = `<div class="browse-answer-state"><strong>Agent error:</strong> ${escapeHtml(d.message || 'Unknown error')}</div>`;
+                                return;
+                            }
+                        } catch (e) {
+                            // ignore malformed SSE payloads
                         }
                     }
                 }
 
-                // Render result with typing effect
                 if (resultContent) {
-                    let linksHtml = '';
-                    if (resultLinks && resultLinks.length > 0) {
-                        linksHtml = `<div style="margin-top: 16px; padding: 12px; background: rgba(102,126,234,0.1); border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 8px; color: #667eea;">🔗 Links Visitados</div>
-                            ${resultLinks.map(link => `<a href="${link}" target="_blank" rel="noopener" style="display: block; color: #667eea; text-decoration: none; margin: 4px 0; font-size: 13px; word-break: break-all;">${link.length > 60 ? link.substring(0, 60) + '...' : link}</a>`).join('')}
-                        </div>`;
-                    }
-
-                    // Parse markdown-style bold **text**
-                    const formattedContent = escapeHtml(resultContent)
-                        .replace(/\*\*(.+?)\*\*/g, '<strong style="color: #60a5fa;">$1</strong>')
-                        .replace(/\n/g, '<br>');
-
-                    results.innerHTML = `<div class="answer-card fade-in">
-                        <div class="answer-header"><span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Browser Agent</span></div>
-                        <div class="answer-content" id="typingContent"></div>
-                        ${linksHtml}
-                    </div>`;
-
-                    // Typing effect
-                    const typingEl = document.getElementById('typingContent');
-                    let i = 0;
-                    const typeSpeed = 5;
-                    function typeWriter() {
-                        if (i < formattedContent.length) {
-                            // Handle HTML tags - add them all at once
-                            if (formattedContent[i] === '<') {
-                                const closeTag = formattedContent.indexOf('>', i);
-                                typingEl.innerHTML += formattedContent.substring(i, closeTag + 1);
-                                i = closeTag + 1;
-                            } else {
-                                typingEl.innerHTML += formattedContent[i];
-                                i++;
-                            }
-                            setTimeout(typeWriter, typeSpeed);
-                        }
-                    }
-                    typeWriter();
-
-                    cacheRenderedResult(query, mode, 'any', results.innerHTML);
+                    answerBody.innerHTML = `
+                        <div class="browse-answer-content">${formatMd(resultContent)}</div>
+                        ${renderBrowseVisitedLinks(resultLinks)}
+                    `;
                 } else {
-                    results.innerHTML = `<div class="answer-card fade-in">
-                        <div class="answer-header"><span class="badge">Browser Agent</span></div>
-                        <div class="answer-content">Tarefa concluída, mas não houve resposta do LLM. Tente novamente.</div>
-                    </div>`;
+                    answerBody.innerHTML = '<div class="browse-answer-state"><strong>Execution finished.</strong> No final answer content was returned by the agent.</div>';
                 }
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content" style="color: #f87171;">❌ Error: ${e.message}</div></div>`;
+                statusState.textContent = 'Error';
+                outputTag.textContent = 'Failed';
+                answerBody.innerHTML = `<div class="browse-answer-state"><strong>Request error:</strong> ${escapeHtml(e.message)}</div>`;
             } finally {
+                clearInterval(elapsedTicker);
                 btn.disabled = false;
             }
         }
