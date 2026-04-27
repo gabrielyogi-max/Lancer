@@ -250,6 +250,52 @@
             }
         }
 
+        @keyframes heroDrift {
+            0% {
+                transform: translateY(0);
+                text-shadow: 0 0 0 rgba(124, 224, 195, 0);
+            }
+
+            50% {
+                transform: translateY(-3px);
+                text-shadow: 0 10px 30px rgba(124, 224, 195, 0.08);
+            }
+
+            100% {
+                transform: translateY(0);
+                text-shadow: 0 0 0 rgba(124, 224, 195, 0);
+            }
+        }
+
+        @keyframes heroAccentSweep {
+            0% {
+                transform: translateX(-18%);
+                opacity: 0.18;
+            }
+
+            50% {
+                transform: translateX(12%);
+                opacity: 0.34;
+            }
+
+            100% {
+                transform: translateX(-18%);
+                opacity: 0.18;
+            }
+        }
+
+        @keyframes heroSubtitleFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Respect reduced motion preference */
         @media (prefers-reduced-motion: reduce) {
 
@@ -596,6 +642,8 @@
             letter-spacing: -0.05em;
             line-height: 0.96;
             max-width: 10ch;
+            position: relative;
+            animation: heroDrift 7s ease-in-out infinite;
         }
 
         .hero-subtitle {
@@ -603,10 +651,55 @@
             font-size: 1.02rem;
             max-width: 620px;
             text-wrap: balance;
+            animation: heroSubtitleFade 0.8s ease-out 0.12s both;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-md);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, var(--accent-hover), var(--accent-strong));
+            box-shadow: 0 0 0 5px var(--accent-soft);
+        }
+
+        .hero-title::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -12px;
+            width: 62%;
+            height: 18px;
+            transform: translateX(-50%);
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, var(--accent-soft), rgba(244, 191, 135, 0.18), transparent);
+            filter: blur(12px);
+            animation: heroAccentSweep 8s ease-in-out infinite;
+            pointer-events: none;
         }
 
         .hero.compact .hero-title,
-        .hero.compact .hero-subtitle {
+        .hero.compact .hero-subtitle,
+        .hero.compact .hero-kicker {
             display: none;
         }
 
@@ -1162,6 +1255,10 @@
 
         [data-theme="light"] .browse-shell {
             box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        [data-theme="light"] .hero-kicker {
+            background: rgba(255, 252, 247, 0.86);
         }
 
         [data-theme="light"] .sidebar {
@@ -1744,8 +1841,9 @@
 
             <div class="main">
                 <div class="hero" id="hero">
-                    <h1 class="hero-title">Ask, track, verify.</h1>
-                    <p class="hero-subtitle">Lancer turns messy web search into a calmer research workspace with live agent traces, source memory, and cleaner final answers.</p>
+                    <div class="hero-kicker">Multimodal Search System</div>
+                    <h1 class="hero-title">Search, synthesize, decide.</h1>
+                    <p class="hero-subtitle">Lancer blends fast search, deep research, code lookup, academic discovery, and browser exploration into one calmer workspace.</p>
 
                     <div class="search-container">
                         <div class="mode-selector">
