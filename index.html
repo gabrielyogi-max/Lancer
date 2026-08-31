@@ -2086,7 +2086,7 @@
             </div>
 
             <footer class="footer">
-                Built by <a href="https://github.com/gabrielyogi" target="_blank">Gabriel Yogi</a>
+                Built by <a href="https://github.com/gabrielyogi" target="_blank" rel="noopener noreferrer">Gabriel Yogi</a>
             </footer>
         </div>
 
@@ -2098,7 +2098,7 @@
 
     <script>
         const API_BASE = 'https://madras1-lancer.hf.space/api/v1';
-        const RESULT_CACHE_KEY = 'lancer_results_cache';
+        const RESULT_CACHE_KEY = 'lancer_results_cache_v2';
         const MAX_CACHE_ITEMS = 20;
         let currentFreshness = 'any';
         let currentMode = 'quick';
@@ -2329,7 +2329,7 @@
                 const data = await res.json();
                 await displayResults(data, 'Quick Answer', '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', query, mode, freshness);
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(e.message)}</div></div>`;
             } finally {
                 btn.disabled = false;
             }
@@ -2377,7 +2377,7 @@
                     cacheRenderedResult(query, mode, freshness, results.innerHTML);
                 }
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(e.message)}</div></div>`;
             } finally {
                 btn.disabled = false;
             }
@@ -2407,7 +2407,7 @@
                             try {
                                 const d = JSON.parse(line.slice(6));
                                 if (d.type === 'status') {
-                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
                                 }
                                 if (d.type === 'searxng_complete') {
                                     document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
@@ -2419,7 +2419,7 @@
                                     document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Reranked to ${d.returned} results</div>`;
                                 }
                                 if (d.type === 'error') {
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
                                     return;
                                 }
                             } catch { }
@@ -2427,13 +2427,20 @@
                     }
                 }
                 if (searchResults.length) {
-                    const sourcesHtml = searchResults.map((r, i) => `
-                        <div class="source-item">
-                            <div class="source-num">${i + 1}</div>
-                            <a href="${r.url}" target="_blank" class="source-title">${escapeHtml(r.title)}</a>
-                            <span class="source-badge">${r.source}</span>
-                        </div>
-                    `).join('');
+                    const sourcesHtml = searchResults.map((r, i) => {
+                        const safeUrl = safeExternalUrl(r.url);
+                        const title = escapeHtml(r.title || 'Untitled');
+                        const titleElement = safeUrl
+                            ? `<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer" class="source-title">${title}</a>`
+                            : `<span class="source-title">${title}</span>`;
+                        return `
+                            <div class="source-item">
+                                <div class="source-num">${i + 1}</div>
+                                ${titleElement}
+                                <span class="source-badge">${escapeHtml(r.source || '')}</span>
+                            </div>
+                        `;
+                    }).join('');
 
                     results.innerHTML = `<div class="answer-card fade-in">
                         <div class="answer-header"><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>SearXNG + Embeddings</span></div>
@@ -2449,7 +2456,7 @@
                     cacheRenderedResult(query, mode, 'any', results.innerHTML);
                 }
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(e.message)}</div></div>`;
             } finally {
                 btn.disabled = false;
             }
@@ -2479,7 +2486,7 @@
                             try {
                                 const d = JSON.parse(line.slice(6));
                                 if (d.type === 'status') {
-                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
                                 }
                                 if (d.type === 'search_complete') {
                                     document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
@@ -2488,7 +2495,7 @@
                                     searchResults = d.results;
                                 }
                                 if (d.type === 'error') {
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
                                     return;
                                 }
                             } catch { }
@@ -2507,7 +2514,7 @@
                     cacheRenderedResult(query, mode, 'any', results.innerHTML);
                 }
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(e.message)}</div></div>`;
             } finally {
                 btn.disabled = false;
             }
@@ -2537,7 +2544,7 @@
                             try {
                                 const d = JSON.parse(line.slice(6));
                                 if (d.type === 'status') {
-                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`;
+                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
                                 }
                                 if (d.type === 'search_complete') {
                                     document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
@@ -2546,7 +2553,7 @@
                                     searchResults = d.results;
                                 }
                                 if (d.type === 'error') {
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${d.message}</div></div>`;
+                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
                                     return;
                                 }
                             } catch { }
@@ -2565,7 +2572,7 @@
                     cacheRenderedResult(query, mode, 'any', results.innerHTML);
                 }
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(e.message)}</div></div>`;
             } finally {
                 btn.disabled = false;
             }
@@ -2671,13 +2678,17 @@
 
         function renderBrowseVisitedLinks(links) {
             if (!links || !links.length) return '';
+            const safeLinks = links
+                .map(link => ({ label: String(link || ''), url: safeExternalUrl(link) }))
+                .filter(link => link.url);
+            if (!safeLinks.length) return '';
             return `
                 <div class="browse-link-list">
                     <div class="browse-link-list-title">Visited Links</div>
-                    ${links.map(link => `
-                        <a class="browse-link-item" href="${link}" target="_blank" rel="noopener">
+                    ${safeLinks.map(link => `
+                        <a class="browse-link-item" href="${escapeAttribute(link.url)}" target="_blank" rel="noopener noreferrer">
                             <span class="browse-link-bullet"></span>
-                            <span class="browse-link-text">${escapeHtml(link)}</span>
+                            <span class="browse-link-text">${escapeHtml(link.label)}</span>
                         </a>
                     `).join('')}
                 </div>
@@ -2761,9 +2772,9 @@
                             <span class="browse-trace-dot"></span>
                             <div class="browse-trace-body">
                                 <div class="browse-trace-label">${escapeHtml(step.message)}</div>
-                                <div class="browse-trace-meta">${step.time}</div>
+                                <div class="browse-trace-meta">${escapeHtml(step.time)}</div>
                             </div>
-                            <span class="browse-trace-state">${step.label}</span>
+                            <span class="browse-trace-state">${escapeHtml(step.label)}</span>
                         </div>
                     `;
                 }).join('');
@@ -2928,7 +2939,7 @@
                     cacheRenderedResult(query, mode, freshness, results.innerHTML);
                 }
             } catch (e) {
-                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${e.message}</div></div>`;
+                results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(e.message)}</div></div>`;
             } finally {
                 btn.disabled = false;
             }
@@ -2953,7 +2964,7 @@
             const bar = document.getElementById('progressBar');
             if (!bar) return;
             const map = {
-                status: `<div class="progress-step active"><span class="spinner"></span> ${d.message}</div>`,
+                status: `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`,
                 search_complete: `<div class="progress-step complete">✓ Found ${d.results_count} sources</div>`,
                 scrape_complete: `<div class="progress-step complete">✓ Read ${d.scraped_count} pages</div>`,
                 answer_start: `<div class="progress-step active"><span class="spinner"></span> Generating...</div>`
@@ -2966,13 +2977,13 @@
             if (!bar) return;
             if (d.type === 'plan_ready') {
                 bar.innerHTML = `<div class="progress-step complete">✓ Plan ready</div>` +
-                    d.dimensions.map((dim, i) => `<div class="progress-step" id="dim${i}" style="padding-left:1rem;font-size:0.8rem;">○ ${dim.name}</div>`).join('');
+                    d.dimensions.map((dim, i) => `<div class="progress-step" id="dim${i}" style="padding-left:1rem;font-size:0.8rem;">○ ${escapeHtml(dim.name)}</div>`).join('');
             } else if (d.type === 'dimension_start') {
                 const el = document.getElementById(`dim${d.index - 1}`);
-                if (el) { el.className = 'progress-step active'; el.innerHTML = `<span class="spinner"></span> ${d.name}`; }
+                if (el) { el.className = 'progress-step active'; el.innerHTML = `<span class="spinner"></span> ${escapeHtml(d.name)}`; }
             } else if (d.type === 'dimension_complete') {
                 const el = document.getElementById(`dim${d.index - 1}`);
-                if (el) { el.className = 'progress-step complete'; el.innerHTML = `✓ ${d.name} (${d.results_count})`; }
+                if (el) { el.className = 'progress-step complete'; el.innerHTML = `✓ ${escapeHtml(d.name)} (${escapeHtml(d.results_count)})`; }
             } else if (d.type === 'synthesis_start') {
                 bar.innerHTML += `<div class="progress-step active"><span class="spinner"></span> Writing report...</div>`;
             }
@@ -2983,11 +2994,16 @@
             return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => {
                 const engine = s.source ? s.source.split(':').pop() : '';
                 const scorePercent = s.score ? Math.round(s.score * 100) : 0;
+                const safeUrl = safeExternalUrl(s.url);
+                const title = escapeHtml(s.title || 'Untitled');
+                const titleElement = safeUrl
+                    ? `<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer" class="source-title">${title}</a>`
+                    : `<span class="source-title">${title}</span>`;
                 return `
                 <div class="source-item" id="source-${i + 1}">
                     <div class="source-num">${i + 1}</div>
-                    <a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a>
-                    ${engine ? `<span class="source-badge engine">${engine}</span>` : ''}
+                    ${titleElement}
+                    ${engine ? `<span class="source-badge engine">${escapeHtml(engine)}</span>` : ''}
                     ${scorePercent > 0 ? `<span class="source-badge score" title="Confidence: ${scorePercent}%">${scorePercent}%</span>` : ''}
                 </div>`;
             }).join('')}</div>`;
@@ -2998,27 +3014,37 @@
             return `<div class="sources-section"><div class="sources-title">Sources</div>${sources.map((s, i) => {
                 const engine = s.source ? s.source.split(':').pop() : '';
                 const scorePercent = s.score ? Math.round(s.score * 100) : 0;
+                const safeUrl = safeExternalUrl(s.url);
+                const title = escapeHtml(s.title || 'Untitled');
+                const titleElement = safeUrl
+                    ? `<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer" class="source-title">${title}</a>`
+                    : `<span class="source-title">${title}</span>`;
                 return `
                 <div class="source-item" id="source-${i + 1}">
                     <div class="source-num">${i + 1}</div>
-                    <a href="${s.url}" target="_blank" class="source-title">${escapeHtml(s.title || 'Untitled')}</a>
+                    ${titleElement}
                     <span class="source-badge ${s.scraped ? 'scraped' : ''}">${s.scraped ? '📄 Full' : '📋 Snippet'}</span>
-                    ${engine ? `<span class="source-badge engine">${engine}</span>` : ''}
+                    ${engine ? `<span class="source-badge engine">${escapeHtml(engine)}</span>` : ''}
                     ${scorePercent > 0 ? `<span class="source-badge score" title="Confidence: ${scorePercent}%">${scorePercent}%</span>` : ''}
                 </div>`;
             }).join('')}</div>`;
         }
 
         function formatInline(text) {
-            return text
+            return escapeHtml(text)
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
+                .replace(/\[(.+?)\]\((.+?)\)/g, (_match, label, rawUrl) => {
+                    const safeUrl = safeExternalUrl(rawUrl.replaceAll('&amp;', '&'));
+                    return safeUrl
+                        ? `<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+                        : label;
+                })
                 .replace(/\[(\d+)\]/g, '<a href="#source-$1" class="citation" onclick="scrollToSource($1); return false;">[$1]</a>');
         }
 
         function formatMd(text) {
-            const lines = text.replace(/\r\n/g, '\n').split('\n');
+            const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
             let html = '';
             let paragraph = [];
             let listType = null;
@@ -3095,7 +3121,27 @@
             }
         }
 
-        function escapeHtml(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value)
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function safeExternalUrl(value) {
+            try {
+                const url = new URL(String(value || ''), window.location.origin);
+                return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+            } catch {
+                return '';
+            }
+        }
 
         // Image Search
         async function fetchImages(query) {
@@ -3123,20 +3169,27 @@
                         Related Images
                     </div>
                     <div class="images-grid">
-                        ${images.map(img => `
-                            <div class="image-item" onclick="openImageModal('${img.url}')">
-                                <img src="${img.thumbnail}" alt="${escapeHtml(img.title || '')}" loading="lazy" onerror="this.parentElement.style.display='none'">
-                            </div>
-                        `).join('')}
+                        ${images.map(img => {
+                            const imageUrl = safeExternalUrl(img.url);
+                            const thumbnailUrl = safeExternalUrl(img.thumbnail);
+                            if (!imageUrl || !thumbnailUrl) return '';
+                            return `
+                                <div class="image-item" data-image-url="${escapeAttribute(imageUrl)}" onclick="openImageModal(this.dataset.imageUrl)">
+                                    <img src="${escapeAttribute(thumbnailUrl)}" alt="${escapeAttribute(img.title || '')}" loading="lazy" onerror="this.parentElement.style.display='none'">
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             `;
         }
 
         function openImageModal(url) {
+            const safeUrl = safeExternalUrl(url);
+            if (!safeUrl) return;
             const modal = document.getElementById('imageModal');
             const img = document.getElementById('modalImage');
-            img.src = url;
+            img.src = safeUrl;
             modal.classList.add('open');
             document.body.style.overflow = 'hidden';
         }
