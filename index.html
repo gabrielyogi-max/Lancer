@@ -2068,7 +2068,7 @@
                                 Academic
                             </button>
                             <button class="mode-btn" id="modeBrowse" onclick="setMode('browse')"
-                                title="Browser Agent - navigate websites using AI">
+                                title="Browser Use agent - navigate websites and collect evidence">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10" />
                                     <line x1="2" y1="12" x2="22" y2="12" />
@@ -2097,14 +2097,14 @@
                             <button class="filter-chip" data-freshness="month">This month</button>
                         </div>
 
-                        <!-- Stream Visual Toggle (only shows in browse mode) -->
+                        <!-- Live Chromium toggle (only shows in browse mode) -->
                         <div class="filters" id="streamToggleContainer" style="display: none;">
                             <label
                                 style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 14px; background: rgba(255,255,255,0.03); border-radius: 999px; border: 1px solid var(--border); font-weight: 700;">
                                 <input type="checkbox" id="streamVisualToggle"
                                     style="width: 16px; height: 16px; accent-color: var(--accent);">
-                                <span style="font-size: 0.85rem; color: var(--text-secondary);">🎥 Stream Visual
-                                    (Chrome)</span>
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">🎥 Live Browser
+                                    (Chromium)</span>
                             </label>
                         </div>
                     </div>
@@ -2620,18 +2620,20 @@
         }
 
         function buildBrowseShell(streamVisual) {
-            const modeLabel = streamVisual ? 'Visual Stream' : 'Stealth Mode';
-            const sessionLabel = streamVisual ? 'Persistent Chrome + Live Feed' : 'Persistent Headless Camoufox';
+            const modeLabel = streamVisual ? 'Live Chromium' : 'Headless Chromium';
+            const sessionLabel = streamVisual
+                ? 'Browser Use + Persistent Chromium + Live Feed'
+                : 'Browser Use + Persistent Headless Chromium';
             const streamInfo = streamVisual
                 ? 'Waiting for stream URL from the sandbox. The live viewport appears here as soon as the browser is ready.'
-                : '<strong>Stealth run:</strong> this mode does not expose video stream. Focus on the action timeline and final answer.';
+                : '<strong>Headless run:</strong> Browser Use is controlling Chromium inside E2B without exposing a video stream. Follow the action timeline and final answer.';
 
             return `
                 <div class="browse-shell fade-in">
                     <div class="browse-header">
                         <div class="browse-title-wrap">
                             <div class="browse-kicker">Agent Session</div>
-                            <div class="browse-title">Browser Agent Workspace</div>
+                            <div class="browse-title">Browser Use Research Workspace</div>
                         </div>
                         <div class="browse-mode-tag" id="browseModeTag">${modeLabel}</div>
                     </div>
@@ -2669,24 +2671,24 @@
                                     <iframe class="browse-live-frame" id="browseLiveFrame" title="Browser stream" style="display:none;"></iframe>
                                     <div class="browse-live-placeholder" id="browseLivePlaceholder">${streamInfo}</div>
                                 </div>
-                                ${streamVisual ? '' : '<div class="browse-stream-off-note"><strong>Tip:</strong> enable "Stream Visual (Chrome)" if you want to follow actions live.</div>'}
+                                ${streamVisual ? '' : '<div class="browse-stream-off-note"><strong>Tip:</strong> enable "Live Browser (Chromium)" if you want to watch the same agent session.</div>'}
                             </div>
                             <div class="browse-card">
                                 <div class="browse-card-head">
-                                    <strong>Research Map</strong>
-                                    <span id="browseProgressTag">0 facts · 0 gaps</span>
+                                    <strong>Research Progress</strong>
+                                    <span id="browseProgressTag">0 evidence items · 0 goals</span>
                                 </div>
                                 <div class="browse-progress-grid">
                                     <div class="browse-progress-col">
-                                        <div class="browse-progress-title">Known Facts</div>
+                                        <div class="browse-progress-title">Verified Evidence</div>
                                         <div class="browse-progress-list" id="browseKnownList">
-                                            <div class="browse-progress-empty">No facts collected yet.</div>
+                                            <div class="browse-progress-empty">No verified evidence collected yet.</div>
                                         </div>
                                     </div>
                                     <div class="browse-progress-col">
-                                        <div class="browse-progress-title">Missing Points</div>
+                                        <div class="browse-progress-title">Next Goals</div>
                                         <div class="browse-progress-list" id="browseMissingList">
-                                            <div class="browse-progress-empty">No active gaps right now.</div>
+                                            <div class="browse-progress-empty">No open research goals right now.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2714,7 +2716,7 @@
             if (!safeLinks.length) return '';
             return `
                 <div class="browse-link-list">
-                    <div class="browse-link-list-title">Visited Links</div>
+                    <div class="browse-link-list-title">Verified Direct Sources</div>
                     ${safeLinks.map((link, index) => `
                         <a class="browse-link-item" id="source-${index + 1}" href="${escapeAttribute(link.url)}" target="_blank" rel="noopener noreferrer">
                             <span class="browse-link-bullet"></span>
@@ -2738,19 +2740,19 @@
             const missing = Array.isArray(missingPoints) ? missingPoints : [];
 
             if (progressTagEl) {
-                progressTagEl.textContent = `${known.length} facts · ${missing.length} gaps · ${evidenceCount} quotes · ${verifiedSources} sources`;
+                progressTagEl.textContent = `${known.length} evidence items · ${missing.length} goals · ${evidenceCount} quotes · ${verifiedSources} sources`;
             }
 
             if (knownListEl) {
                 knownListEl.innerHTML = known.length
                     ? known.map(item => `<div class="browse-progress-item">${escapeHtml(String(item))}</div>`).join('')
-                    : '<div class="browse-progress-empty">No facts collected yet.</div>';
+                    : '<div class="browse-progress-empty">No verified evidence collected yet.</div>';
             }
 
             if (missingListEl) {
                 missingListEl.innerHTML = missing.length
                     ? missing.map(item => `<div class="browse-progress-item">${escapeHtml(String(item))}</div>`).join('')
-                    : '<div class="browse-progress-empty">No active gaps right now.</div>';
+                    : '<div class="browse-progress-empty">No open research goals right now.</div>';
             }
         }
 
