@@ -1304,6 +1304,34 @@
             color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
         }
 
+        .md-table-wrap {
+            overflow-x: auto;
+            margin: 0.8rem 0;
+        }
+
+        .answer-content table,
+        .browse-answer-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .answer-content th,
+        .answer-content td,
+        .browse-answer-content th,
+        .browse-answer-content td {
+            padding: 0.55rem 0.65rem;
+            border: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .answer-content th,
+        .browse-answer-content th {
+            background: var(--bg-hover);
+            font-weight: 600;
+        }
+
         .browse-link-list {
             margin-top: 0.95rem;
             padding-top: 0.88rem;
@@ -2582,8 +2610,10 @@
             const msg = (message || '').toLowerCase();
             if (msg.includes('search') || msg.includes('busc')) return 'search';
             if (msg.includes('navigat') || msg.includes('visit')) return 'navigate';
+            if (msg.includes('click') || msg.includes('type') || msg.includes('scroll') || msg.includes('back')) return 'interact';
             if (msg.includes('extract') || msg.includes('fetch')) return 'extract';
-            if (msg.includes('analy') || msg.includes('think') || msg.includes('synth')) return 'analyze';
+            if (msg.includes('analy') || msg.includes('think') || msg.includes('synth') || msg.includes('observ')) return 'analyze';
+            if (msg.includes('verif')) return 'verify';
             if (msg.includes('complete') || msg.includes('done') || msg.includes('ready')) return 'complete';
             if (msg.includes('blocked') || msg.includes('error') || msg.includes('fail')) return 'warning';
             return 'setup';
@@ -2591,7 +2621,7 @@
 
         function buildBrowseShell(streamVisual) {
             const modeLabel = streamVisual ? 'Visual Stream' : 'Stealth Mode';
-            const sessionLabel = streamVisual ? 'Chrome with Live Feed' : 'Headless Camoufox';
+            const sessionLabel = streamVisual ? 'Persistent Chrome + Live Feed' : 'Persistent Headless Camoufox';
             const streamInfo = streamVisual
                 ? 'Waiting for stream URL from the sandbox. The live viewport appears here as soon as the browser is ready.'
                 : '<strong>Stealth run:</strong> this mode does not expose video stream. Focus on the action timeline and final answer.';
@@ -2685,8 +2715,8 @@
             return `
                 <div class="browse-link-list">
                     <div class="browse-link-list-title">Visited Links</div>
-                    ${safeLinks.map(link => `
-                        <a class="browse-link-item" href="${escapeAttribute(link.url)}" target="_blank" rel="noopener noreferrer">
+                    ${safeLinks.map((link, index) => `
+                        <a class="browse-link-item" id="source-${index + 1}" href="${escapeAttribute(link.url)}" target="_blank" rel="noopener noreferrer">
                             <span class="browse-link-bullet"></span>
                             <span class="browse-link-text">${escapeHtml(link.label)}</span>
                         </a>
@@ -2695,12 +2725,20 @@
             `;
         }
 
-        function renderBrowseProgressMap(knownListEl, missingListEl, progressTagEl, knownFacts = [], missingPoints = []) {
+        function renderBrowseProgressMap(
+            knownListEl,
+            missingListEl,
+            progressTagEl,
+            knownFacts = [],
+            missingPoints = [],
+            evidenceCount = 0,
+            verifiedSources = 0
+        ) {
             const known = Array.isArray(knownFacts) ? knownFacts : [];
             const missing = Array.isArray(missingPoints) ? missingPoints : [];
 
             if (progressTagEl) {
-                progressTagEl.textContent = `${known.length} facts · ${missing.length} gaps`;
+                progressTagEl.textContent = `${known.length} facts · ${missing.length} gaps · ${evidenceCount} quotes · ${verifiedSources} sources`;
             }
 
             if (knownListEl) {
@@ -2745,6 +2783,7 @@
             const stepHistory = [];
             let resultContent = '';
             let resultLinks = [];
+            let resultSuccess = null;
             let hasStream = false;
 
             renderBrowseProgressMap(knownListEl, missingListEl, progressTagEl, [], []);
@@ -2835,7 +2874,9 @@
                                     missingListEl,
                                     progressTagEl,
                                     d.known_facts || [],
-                                    d.missing_points || []
+                                    d.missing_points || [],
+                                    d.evidence_count || 0,
+                                    d.verified_sources || 0
                                 );
                             }
 
@@ -2859,15 +2900,16 @@
                             if (d.type === 'result') {
                                 resultContent = d.content || '';
                                 resultLinks = d.links || [];
-                                outputTag.textContent = 'Draft generated';
+                                resultSuccess = d.success !== false;
+                                outputTag.textContent = resultSuccess ? 'Verified answer' : 'Partial result';
                             }
 
                             if (d.type === 'complete') {
                                 if (stepHistory.length) {
                                     stepHistory[stepHistory.length - 1].done = true;
                                 }
-                                statusState.textContent = 'Complete';
-                                outputTag.textContent = 'Final answer';
+                                statusState.textContent = resultSuccess === false ? 'Incomplete' : 'Complete';
+                                outputTag.textContent = resultSuccess === false ? 'Needs more evidence' : 'Final answer';
                                 renderTrace();
                             }
 
@@ -3070,11 +3112,54 @@
                 listType = type;
             };
 
-            for (const rawLine of lines) {
+            const tableCells = (value) => value
+                .replace(/^\|/, '')
+                .replace(/\|$/, '')
+                .split('|')
+                .map(cell => cell.trim());
+
+            const isTableDivider = (value) => {
+                const cells = tableCells(value);
+                return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+            };
+
+            for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+                const rawLine = lines[lineIndex];
                 const line = rawLine.trim();
                 if (!line) {
                     flushParagraph();
                     closeList();
+                    continue;
+                }
+
+                const nextLine = (lines[lineIndex + 1] || '').trim();
+                if (line.includes('|') && isTableDivider(nextLine)) {
+                    flushParagraph();
+                    closeList();
+                    const headers = tableCells(line);
+                    html += '<div class="md-table-wrap"><table><thead><tr>';
+                    html += headers.map(cell => `<th>${formatInline(cell)}</th>`).join('');
+                    html += '</tr></thead><tbody>';
+                    lineIndex += 1;
+                    while (lineIndex + 1 < lines.length) {
+                        const candidate = lines[lineIndex + 1].trim();
+                        if (!candidate || !candidate.includes('|')) break;
+                        const cells = tableCells(candidate);
+                        html += '<tr>';
+                        for (let cellIndex = 0; cellIndex < headers.length; cellIndex += 1) {
+                            html += `<td>${formatInline(cells[cellIndex] || '')}</td>`;
+                        }
+                        html += '</tr>';
+                        lineIndex += 1;
+                    }
+                    html += '</tbody></table></div>';
+                    continue;
+                }
+
+                if (/^(-{2,}|_{3,}|\*{3,})$/.test(line)) {
+                    flushParagraph();
+                    closeList();
+                    html += '<hr>';
                     continue;
                 }
 
