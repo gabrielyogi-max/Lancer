@@ -3315,9 +3315,9 @@
                         <!-- Research depth selector (only shows in browse mode) -->
                         <div class="filters" id="depthSelector" style="display: none;">
                             <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; padding: 6px 0;">Profundidade:</span>
-                            <button class="filter-chip" data-depth="quick" onclick="setDepth('quick')">⚡ Rápida</button>
-                            <button class="filter-chip active" data-depth="normal" onclick="setDepth('normal')">📊 Normal</button>
-                            <button class="filter-chip" data-depth="deep" onclick="setDepth('deep')">🔬 Profunda</button>
+                            <button class="filter-chip depth-chip" data-depth="quick" onclick="setDepth('quick')">⚡ Rápida</button>
+                            <button class="filter-chip depth-chip active" data-depth="normal" onclick="setDepth('normal')">📊 Normal</button>
+                            <button class="filter-chip depth-chip" data-depth="deep" onclick="setDepth('deep')">🔬 Profunda</button>
                         </div>
 
                     </div>
@@ -3403,7 +3403,7 @@
 
 
 
-            document.querySelectorAll('.filter-chip').forEach(chip => {
+            document.querySelectorAll('.filter-chip:not(.depth-chip)').forEach(chip => {
 
                 chip.addEventListener('click', () => {
 
@@ -3430,8 +3430,8 @@
         }
         function setDepth(depth) {
             currentDepth = depth;
-            document.querySelectorAll('#depthSelector .filter-chip').forEach(c => c.classList.remove('active'));
-            const active = document.querySelector('#depthSelector .filter-chip[data-depth="' + depth + '"]');
+            document.querySelectorAll('#depthSelector .depth-chip').forEach(c => c.classList.remove('active'));
+            const active = document.querySelector('#depthSelector .depth-chip[data-depth="' + depth + '"]');
             if (active) active.classList.add('active');
         }
 
