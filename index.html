@@ -3013,6 +3013,140 @@
 
         }
 
+    
+        /* === UI POLISH ENHANCEMENTS === */
+        .depth-control-wrapper {
+            display: inline-flex;
+            align-items: center;
+            background: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 3px 4px;
+            gap: 3px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .depth-chip {
+            padding: 0.35rem 0.8rem !important;
+            border: 1px solid transparent !important;
+            border-radius: 999px !important;
+            background: transparent !important;
+            color: var(--text-muted) !important;
+            font-size: 0.76rem !important;
+            font-weight: 600 !important;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .depth-chip:hover {
+            color: var(--text-primary) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        .depth-chip.active {
+            background: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated)) !important;
+            color: var(--accent) !important;
+            border-color: color-mix(in srgb, var(--accent) 45%, transparent) !important;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 20%, transparent);
+            font-weight: 700 !important;
+        }
+
+        .browse-stat {
+            border: 1px solid color-mix(in srgb, var(--border) 85%, transparent) !important;
+            border-radius: 12px !important;
+            padding: 0.65rem 0.75rem !important;
+            background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent) !important;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .browse-stat:hover {
+            border-color: var(--border-hover) !important;
+        }
+
+        .browse-stat-label {
+            font-size: 0.62rem !important;
+            color: var(--text-muted) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.1em !important;
+            font-weight: 700 !important;
+            margin-bottom: 0.22rem !important;
+        }
+
+        .browse-stat-value {
+            font-size: 0.84rem !important;
+            color: var(--text-primary) !important;
+            font-weight: 600 !important;
+        }
+
+        .browse-trace-state {
+            font-size: 0.64rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .browse-trace-state[data-action="extract"] {
+            background: rgba(59, 130, 246, 0.14);
+            color: #60A5FA;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        .browse-trace-state[data-action="search"] {
+            background: rgba(16, 185, 129, 0.14);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .browse-trace-state[data-action="verify"] {
+            background: rgba(245, 158, 11, 0.14);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .browse-trace-state[data-action="complete"] {
+            background: rgba(139, 92, 246, 0.16);
+            color: #A78BFA;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+
+        .browse-error-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 1rem 1.1rem;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.28);
+            border-radius: 14px;
+            margin: 0.6rem 0;
+            backdrop-filter: blur(8px);
+        }
+
+        .browse-error-box .error-icon {
+            font-size: 1.3rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .browse-error-box .error-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #F87171;
+            margin-bottom: 0.25rem;
+        }
+
+        .browse-error-box .error-msg {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            word-break: break-word;
+        }
     </style>
 
 </head>
@@ -3033,7 +3167,18 @@
 
                     <div class="icon">
 
-                        <img src="lancer-icon.png" alt="Lancer" style="width: 100%; height: 100%; border-radius: 6px;">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+                        <rect width="32" height="32" rx="8" fill="url(#lancerGrad)"/>
+                        <path d="M16 6L23 13L18 15L15 18L13 23L6 16L11 11L16 6Z" fill="#10B981" fill-opacity="0.25" stroke="#10B981" stroke-width="1.8" stroke-linejoin="round"/>
+                        <circle cx="16" cy="16" r="2.5" fill="#10B981"/>
+                        <path d="M16 8.5V11M23.5 16H21M16 23.5V21M8.5 16H11" stroke="#34D399" stroke-width="1.5" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="lancerGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#064E3B" stop-opacity="0.5"/>
+                                <stop offset="1" stop-color="#022C22" stop-opacity="0.9"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
 
                     </div>
 
@@ -3191,25 +3336,7 @@
 
                             </button>
 
-                            <button class="mode-btn" id="modeSearxng" onclick="setMode('searxng')"
-
-                                title="Experimental: SearXNG + Embeddings">
-
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-
-                                    <path
-
-                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-
-                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-
-                                    <line x1="12" y1="22.08" x2="12" y2="12" />
-
-                                </svg>
-
-                                SearXNG
-
-                            </button>
+                            
 
                             <button class="mode-btn" id="modeCode" onclick="setMode('code')"
 
@@ -3313,11 +3440,13 @@
 
                         </div>
                         <!-- Research depth selector (only shows in browse mode) -->
-                        <div class="filters" id="depthSelector" style="display: none;">
-                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; padding: 6px 0;">Profundidade:</span>
-                            <button class="filter-chip depth-chip" data-depth="quick" onclick="setDepth('quick')">⚡ Rápida</button>
-                            <button class="filter-chip depth-chip active" data-depth="normal" onclick="setDepth('normal')">📊 Normal</button>
-                            <button class="filter-chip depth-chip" data-depth="deep" onclick="setDepth('deep')">🔬 Profunda</button>
+                        <div class="filters" id="depthSelector" style="display: none; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Profundidade:</span>
+                            <div class="depth-control-wrapper">
+                                <button class="filter-chip depth-chip" data-depth="quick" onclick="setDepth('quick')">⚡ Rápida</button>
+                                <button class="filter-chip depth-chip active" data-depth="normal" onclick="setDepth('normal')">📊 Normal</button>
+                                <button class="filter-chip depth-chip" data-depth="deep" onclick="setDepth('deep')">🔬 Profunda</button>
+                            </div>
                         </div>
 
                     </div>
@@ -3440,7 +3569,9 @@
 
         function getCacheKey(query, mode, freshness) {
 
-            const encodedQuery = encodeURIComponent(query).replace(/'/g, '%27');
+            const normalized = (query || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+            const encodedQuery = encodeURIComponent(normalized).replace(/'/g, '%27');
 
             return `${mode}|${freshness}|${encodedQuery}`;
 
@@ -3573,6 +3704,18 @@
                 return;
 
             }
+
+            // Deduplicate items case-insensitively on the fly
+            const seen = new Set();
+            const uniqueHistory = [];
+            for (const item of history) {
+                const norm = (item.query || '').trim().toLowerCase();
+                if (!seen.has(norm)) {
+                    seen.add(norm);
+                    uniqueHistory.push(item);
+                }
+            }
+            history = uniqueHistory;
 
             list.innerHTML = history.map(h => {
 
@@ -3724,7 +3867,7 @@
 
             currentMode = mode;
 
-            ['quick', 'heavy', 'deep', 'searxng', 'code', 'academic', 'browse'].forEach(m => {
+            ['quick', 'heavy', 'deep', 'code', 'academic', 'browse'].forEach(m => {
 
                 document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1))
 
@@ -3747,7 +3890,7 @@
 
                 deep: 'Complex research topic...',
 
-                searxng: 'SearXNG + Embedding rerank...',
+                
 
                 code: 'Search code, GitHub, StackOverflow...',
 
@@ -4599,7 +4742,7 @@
                                 <div class="browse-trace-meta">${escapeHtml(step.time)}</div>
                             </div>
 
-                            <span class="browse-trace-state">${escapeHtml(step.label)}</span>
+                            <span class="browse-trace-state" data-action="${escapeHtml((step.label || "").toLowerCase())}">${escapeHtml(step.label)}</span>
                         </div>
 
                     `;
@@ -4762,7 +4905,7 @@
                                 }
 
                                 statusState.textContent = resultSuccess === false ? 'Incomplete' : 'Complete';
-                                outputTag.textContent = resultSuccess === false ? 'Needs more evidence' : 'Final answer';
+                                outputTag.textContent = resultSuccess === false ? 'Needs more evidence' : (resultSuccess ? 'Verified answer' : 'Final answer');
                                 renderTrace();
 
                             }
@@ -4775,7 +4918,14 @@
 
                                 outputTag.textContent = 'Failed';
 
-                                answerBody.innerHTML = `<div class="browse-answer-state"><strong>Agent error:</strong> ${escapeHtml(d.message || 'Unknown error')}</div>`;
+                                answerBody.innerHTML = `
+                                    <div class="browse-error-box">
+                                        <span class="error-icon">⚠️</span>
+                                        <div class="error-text">
+                                            <div class="error-title">Falha na execução do agente</div>
+                                            <div class="error-msg">${escapeHtml(d.message || 'Erro inesperado durante a navegação')}</div>
+                                        </div>
+                                    </div>`;
 
                                 return;
 
