@@ -3027,7 +3027,7 @@
         }
 
         .depth-chip {
-            padding: 0.35rem 0.8rem !important;
+            padding: 0.34rem 0.85rem !important;
             border: 1px solid transparent !important;
             border-radius: 999px !important;
             background: transparent !important;
@@ -3035,7 +3035,30 @@
             font-size: 0.76rem !important;
             font-weight: 600 !important;
             cursor: pointer;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.42rem !important;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .depth-chip svg {
+            width: 12.5px;
+            height: 12.5px;
+            stroke: currentColor;
+            stroke-width: 2;
+            flex-shrink: 0;
+            opacity: 0.8;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .depth-chip:hover svg {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .depth-chip.active svg {
+            opacity: 1;
+            stroke: var(--accent);
         }
 
         .depth-chip:hover {
@@ -3440,12 +3463,30 @@
 
                         </div>
                         <!-- Research depth selector (only shows in browse mode) -->
-                        <div class="filters" id="depthSelector" style="display: none; align-items: center; gap: 0.6rem;">
-                            <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Profundidade:</span>
+                        <div class="filters" id="depthSelector" style="display: none; align-items: center; gap: 0.65rem;">
+                            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Profundidade:</span>
                             <div class="depth-control-wrapper">
-                                <button class="filter-chip depth-chip" data-depth="quick" onclick="setDepth('quick')">⚡ Rápida</button>
-                                <button class="filter-chip depth-chip active" data-depth="normal" onclick="setDepth('normal')">📊 Normal</button>
-                                <button class="filter-chip depth-chip" data-depth="deep" onclick="setDepth('deep')">🔬 Profunda</button>
+                                <button class="filter-chip depth-chip" data-depth="quick" onclick="setDepth('quick')" title="Pesquisa rápida focada (1 fonte)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    <span>Rápida</span>
+                                </button>
+                                <button class="filter-chip depth-chip active" data-depth="normal" onclick="setDepth('normal')" title="Pesquisa equilibrada (2 fontes)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                                    </svg>
+                                    <span>Normal</span>
+                                </button>
+                                <button class="filter-chip depth-chip" data-depth="deep" onclick="setDepth('deep')" title="Pesquisa analítica aprofundada (múltiplas fontes)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                        <polyline points="2 17 12 22 22 17"></polyline>
+                                        <polyline points="2 12 12 17 22 12"></polyline>
+                                    </svg>
+                                    <span>Profunda</span>
+                                </button>
                             </div>
                         </div>
 
