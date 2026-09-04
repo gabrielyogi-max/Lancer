@@ -1885,43 +1885,76 @@
 
         .browse-answer-wrap {
 
-            padding: 0.95rem;
-
+            padding: 1.15rem 1.25rem;
         }
-
-
 
         .browse-answer-state {
-
             font-size: 0.85rem;
-
             color: var(--text-secondary);
-
             line-height: 1.55;
-
         }
-
-
 
         .browse-answer-state strong {
-
             color: var(--text-primary);
-
         }
-
-
 
         .browse-answer-content {
-
-            font-size: 0.92rem;
-
+            font-size: 0.94rem;
             color: var(--text-primary);
-
-            line-height: 1.72;
-
+            line-height: 1.74;
         }
 
+        .browse-answer-content p {
+            margin-bottom: 0.85rem;
+        }
 
+        .browse-answer-content ul,
+        .browse-answer-content ol {
+            padding-left: 1.65rem;
+            margin-left: 0.25rem;
+            margin-top: 0.35rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .browse-answer-content li {
+            margin-bottom: 0.4rem;
+            padding-left: 0.25rem;
+            line-height: 1.65;
+        }
+
+        .browse-answer-content h1,
+        .browse-answer-content h2,
+        .browse-answer-content h3,
+        .browse-answer-content h4,
+        .browse-answer-content h5,
+        .browse-answer-content h6 {
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .browse-answer-content h1 { font-size: 1.35rem; }
+        .browse-answer-content h2 { font-size: 1.15rem; }
+        .browse-answer-content h3 { font-size: 1.02rem; }
+        .browse-answer-content h4 { font-size: 0.95rem; }
+
+        .browse-answer-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1.2rem 0;
+        }
+
+        .browse-answer-content a {
+            color: var(--accent);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .browse-answer-content a:hover {
+            text-decoration: underline;
+        }
 
         .browse-answer-content strong {
             color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
@@ -2409,6 +2442,12 @@
 
         }
 
+        .answer-content h4 {
+
+            font-size: 0.95rem;
+
+        }
+
 
 
         .answer-content p {
@@ -2425,16 +2464,16 @@
 
             margin-left: 1.25rem;
 
-            margin-bottom: 0.75rem;
-
+            padding-left: 1.65rem;
+            margin-left: 0.25rem;
+            margin-top: 0.35rem;
+            margin-bottom: 0.85rem;
         }
 
-
-
         .answer-content li {
-
-            margin-bottom: 0.35rem;
-
+            margin-bottom: 0.4rem;
+            padding-left: 0.25rem;
+            line-height: 1.65;
         }
 
 
@@ -3530,6 +3569,54 @@
         const RESULT_CACHE_KEY = 'lancer_results_cache_v2';
         const MAX_CACHE_ITEMS = 20;
 
+        async function* readSseEvents(response) {
+            if (!response.ok || !response.body) {
+                let detail = '';
+                try {
+                    detail = await response.text();
+                } catch { }
+                throw new Error(
+                    `Request failed (${response.status})${detail ? `: ${detail.slice(0, 300)}` : ''}`
+                );
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const parseBlock = (block) => {
+                const data = block
+                    .split(/\r?\n/)
+                    .filter(line => line.startsWith('data:'))
+                    .map(line => line.slice(5).trimStart())
+                    .join('\n');
+                if (!data) return null;
+                try {
+                    return JSON.parse(data);
+                } catch {
+                    return null;
+                }
+            };
+
+            while (true) {
+                const { done, value } = await reader.read();
+                buffer += done
+                    ? decoder.decode()
+                    : decoder.decode(value, { stream: true });
+
+                const blocks = buffer.split(/\r?\n\r?\n/);
+                buffer = blocks.pop() || '';
+                for (const block of blocks) {
+                    const event = parseBlock(block);
+                    if (event) yield event;
+                }
+                if (done) break;
+            }
+
+            const trailingEvent = parseBlock(buffer);
+            if (trailingEvent) yield trailingEvent;
+        }
+
         let currentFreshness = 'any';
 
         let currentMode = 'quick';
@@ -4052,36 +4139,10 @@
 
                 });
 
-                const reader = res.body.getReader();
-
-                const decoder = new TextDecoder();
-
-                while (true) {
-
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    for (const line of decoder.decode(value).split('\n')) {
-
-                        if (line.startsWith('data: ')) {
-
-                            try {
-
-                                const d = JSON.parse(line.slice(6));
-
-                                updateProgress(d);
-
-                                if (d.type === 'answer_chunk') answer += d.content;
-
-                                if (d.type === 'results') sources = d.results;
-
-                            } catch { }
-
-                        }
-
-                    }
-
+                for await (const d of readSseEvents(res)) {
+                    updateProgress(d);
+                    if (d.type === 'answer_chunk') answer += d.content;
+                    if (d.type === 'results') sources = d.results;
                 }
 
                 if (answer) {
@@ -4145,60 +4206,21 @@
 
                 });
 
-                const reader = res.body.getReader();
-
-                const decoder = new TextDecoder();
-
-                while (true) {
-
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    for (const line of decoder.decode(value).split('\n')) {
-
-                        if (line.startsWith('data: ')) {
-
-                            try {
-
-                                const d = JSON.parse(line.slice(6));
-
-                                if (d.type === 'status') {
-
-                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
-                                }
-
-                                if (d.type === 'searxng_complete') {
-
-                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
-
-                                }
-
-                                if (d.type === 'results') {
-
-                                    searchResults = d.results;
-
-                                }
-
-                                if (d.type === 'done') {
-
-                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Reranked to ${d.returned} results</div>`;
-
-                                }
-
-                                if (d.type === 'error') {
-
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
-                                    return;
-
-                                }
-
-                            } catch { }
-
-                        }
-
+                for await (const d of readSseEvents(res)) {
+                    if (d.type === 'status') {
+                        document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
                     }
-
+                    if (d.type === 'searxng_complete') {
+                        document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
+                    }
+                    if (d.type === 'results') searchResults = d.results;
+                    if (d.type === 'done') {
+                        document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Reranked to ${d.returned} results</div>`;
+                    }
+                    if (d.type === 'error') {
+                        results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
+                        return;
+                    }
                 }
 
                 if (searchResults.length) {
@@ -4286,54 +4308,18 @@
 
                 });
 
-                const reader = res.body.getReader();
-
-                const decoder = new TextDecoder();
-
-                while (true) {
-
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    for (const line of decoder.decode(value).split('\n')) {
-
-                        if (line.startsWith('data: ')) {
-
-                            try {
-
-                                const d = JSON.parse(line.slice(6));
-
-                                if (d.type === 'status') {
-
-                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
-                                }
-
-                                if (d.type === 'search_complete') {
-
-                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
-
-                                }
-
-                                if (d.type === 'results') {
-
-                                    searchResults = d.results;
-
-                                }
-
-                                if (d.type === 'error') {
-
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
-                                    return;
-
-                                }
-
-                            } catch { }
-
-                        }
-
+                for await (const d of readSseEvents(res)) {
+                    if (d.type === 'status') {
+                        document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
                     }
-
+                    if (d.type === 'search_complete') {
+                        document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
+                    }
+                    if (d.type === 'results') searchResults = d.results;
+                    if (d.type === 'error') {
+                        results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
+                        return;
+                    }
                 }
 
                 if (searchResults.length) {
@@ -4399,54 +4385,18 @@
 
                 });
 
-                const reader = res.body.getReader();
-
-                const decoder = new TextDecoder();
-
-                while (true) {
-
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    for (const line of decoder.decode(value).split('\n')) {
-
-                        if (line.startsWith('data: ')) {
-
-                            try {
-
-                                const d = JSON.parse(line.slice(6));
-
-                                if (d.type === 'status') {
-
-                                    document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
-                                }
-
-                                if (d.type === 'search_complete') {
-
-                                    document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
-
-                                }
-
-                                if (d.type === 'results') {
-
-                                    searchResults = d.results;
-
-                                }
-
-                                if (d.type === 'error') {
-
-                                    results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
-                                    return;
-
-                                }
-
-                            } catch { }
-
-                        }
-
+                for await (const d of readSseEvents(res)) {
+                    if (d.type === 'status') {
+                        document.getElementById('progressBar').innerHTML = `<div class="progress-step active"><span class="spinner"></span> ${escapeHtml(d.message)}</div>`;
                     }
-
+                    if (d.type === 'search_complete') {
+                        document.getElementById('progressBar').innerHTML += `<div class="progress-step complete">✓ Found ${d.count} results</div>`;
+                    }
+                    if (d.type === 'results') searchResults = d.results;
+                    if (d.type === 'error') {
+                        results.innerHTML = `<div class="answer-card"><div class="answer-content">Error: ${escapeHtml(d.message)}</div></div>`;
+                        return;
+                    }
                 }
 
                 if (searchResults.length) {
@@ -5044,34 +4994,10 @@
 
                 });
 
-                const reader = res.body.getReader();
-
-                const decoder = new TextDecoder();
-
-                while (true) {
-
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    for (const line of decoder.decode(value).split('\n')) {
-
-                        if (line.startsWith('data: ')) {
-
-                            try {
-
-                                const d = JSON.parse(line.slice(6));
-
-                                updateDeepProgress(d);
-
-                                if (d.type === 'report_chunk') report += d.content;
-
-                            } catch { }
-
-                        }
-
-                    }
-
+                for await (const d of readSseEvents(res)) {
+                    updateDeepProgress(d);
+                    if (d.type === 'report_chunk') report += d.content;
+                    if (d.type === 'error') throw new Error(d.message || 'Deep research failed');
                 }
 
                 if (report) {
@@ -5360,7 +5286,7 @@
                 }
 
 
-                const headingMatch = line.match(/^(#{1,3})\s+(.*)$/);
+                const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
 
                 if (headingMatch) {
 
